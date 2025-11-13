@@ -8,6 +8,28 @@
 our::Texture2D* our::texture_utils::empty(GLenum format, glm::ivec2 size){
     our::Texture2D* texture = new our::Texture2D();
     //TODO: (Req 11) Finish this function to create an empty texture with the given size and format
+    glBindTexture(GL_TEXTURE_2D, texture->getOpenGLName());
+    GLenum pixel_format;
+    GLenum pixel_type;
+
+    switch(format){
+        case GL_RGBA8:
+            pixel_format = GL_RGBA;
+            pixel_type = GL_UNSIGNED_BYTE;
+            break;
+        case GL_DEPTH_COMPONENT24:
+            pixel_format = GL_DEPTH_COMPONENT;
+            pixel_type = GL_FLOAT; 
+            break;
+        default:
+            pixel_format = GL_RGB;
+            pixel_type = GL_UNSIGNED_BYTE;
+            break;
+    }
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, format, size.x, size.y, 0, pixel_format, pixel_type, nullptr);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     return texture;
 }
