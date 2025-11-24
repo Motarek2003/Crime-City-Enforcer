@@ -30,13 +30,15 @@
         "grass": "assets/textures/grass_ground_d.jpg",
         "wood": "assets/textures/wood.jpg",
         "glass": "assets/textures/glass-panels.png",
-        "monkey": "assets/textures/monkey.png"
+        "monkey": "assets/textures/monkey.png",
+        "character": "assets/textures/Character_BaseColor.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
         "monkey": "assets/models/monkey.obj",
         "plane": "assets/models/plane.obj",
-        "sphere": "assets/models/sphere.obj"
+        "sphere": "assets/models/sphere.obj",
+        "character": "assets/models/Character.obj"
       },
       "samplers": {
         "default": {},
@@ -45,6 +47,21 @@
         }
       },
       "materials": {
+        "character": {
+          "type": "textured",
+          "shader": "textured",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "texture": "character",
+          "sampler": "default"
+        },
         "metal": {
           "type": "tinted",
           "shader": "tinted",
@@ -129,42 +146,67 @@
     },
     "world": [
       {
-        "position": [0, 0, 10],
+        "scale": [1, 1, 1],
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
         "components": [
-          {
-            "type": "Camera"
-          },
-          {
-            "type": "Free Camera Controller"
-          }
-        ],
-        "children": [
-          {
-            "position": [1, -1, -1],
-            "rotation": [45, 45, 0],
-            "scale": [0.1, 0.1, 1.0],
-            "components": [
-              {
-                "type": "Mesh Renderer",
-                "mesh": "cube",
-                "material": "metal"
-              }
-            ]
-          }
+          { "type": "Camera" },
+          { "type": "Free Camera Controller" }
         ]
       },
       {
-        "rotation": [-45, 0, 0],
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 180, 0],
+        "position": [0, 0, 10],
         "components": [
           {
             "type": "Mesh Renderer",
-            "mesh": "monkey",
-            "material": "monkey"
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Character"
+          }
+        ]
+      },
+      // {
+      //   "position": [0, 0, 10],
+      //   "components": [
+      //     {
+      //       "type": "Camera"
+      //     },
+      //     {
+      //       "type": "Free Camera Controller"
+      //     }
+      //   ],
+      //   "children": [
+      //     {
+      //       "scale": [0.01, 0.01, 0.01],
+      //       "rotation": [0, 180, 0],
+      //       "position": [0, 0, -2],
+      //       "components": [
+      //         {
+      //           "type": "Mesh Renderer",
+      //           "mesh": "character",
+      //           "material": "character"
+      //         }
+      //       ]
+      //     }
+      //   ]
+      // },
+      {
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 0, 0],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
           },
           {
             "type": "Movement",
-            "linearVelocity": [0, 0.1, 0],
-            "angularVelocity": [0, 45, 0]
+            "linearVelocity": [0, 0, 0],
+            "angularVelocity": [0, 0, 0]
           }
         ]
       },

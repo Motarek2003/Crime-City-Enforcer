@@ -3,6 +3,7 @@
 #include "../ecs/world.hpp"
 #include "../components/camera.hpp"
 #include "../components/free-camera-controller.hpp"
+#include "../components/character.hpp"
 
 #include "../application.hpp"
 
@@ -43,6 +44,13 @@ namespace our
             // Get the entity that we found via getOwner of camera (we could use controller->getOwner())
             Entity* entity = camera->getOwner();
 
+            CharacterComponent* character = nullptr;
+            for(auto entity : world->getEntities()){
+                 character = entity->getComponent<CharacterComponent>();
+                 if(character) break;
+             }
+            Entity* characterEntity = character->getOwner();
+
             // If the left mouse button is pressed, we lock and hide the mouse. This common in First Person Games.
             if(app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1) && !mouse_locked){
                 app->getMouse().lockMouse(app->getWindow());
@@ -72,32 +80,21 @@ namespace our
             // This could prevent floating point error if the player rotates in single direction for an extremely long time. 
             rotation.y = glm::wrapAngle(rotation.y);
 
+            const float minAngle = -glm::pi<float>() / 3.0f ;
+            const float maxAngle =  glm::pi<float>() / 3.0f ;
+
+            // 2. Clamp the value
+            rotation.x = glm::clamp(rotation.x, minAngle, maxAngle);
+
+            int distance = 1;
+            position.x = (distance * glm::sin(rotation.y) * glm::cos(rotation.x)) + characterEntity->localTransform.position.x;
+            position.z = (distance * glm::cos(rotation.y) * glm::cos(rotation.x)) + characterEntity->localTransform.position.z;
+            position.y = (distance * glm::sin(-rotation.x)) + characterEntity->localTransform.position.y + 2;
+
             // We update the camera fov based on the mouse wheel scrolling amount
             float fov = camera->fovY + app->getMouse().getScrollOffset().y * controller->fovSensitivity;
             fov = glm::clamp(fov, glm::pi<float>() * 0.01f, glm::pi<float>() * 0.99f); // We keep the fov in the range 0.01*PI to 0.99*PI
             camera->fovY = fov;
-
-            // We get the camera model matrix (relative to its parent) to compute the front, up and right directions
-            glm::mat4 matrix = entity->localTransform.toMat4();
-
-            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, -1, 0)),
-                      up = glm::vec3(matrix * glm::vec4(0, 1, 0, 0)), 
-                      right = glm::vec3(matrix * glm::vec4(1, 0, 0, 0));
-
-            glm::vec3 current_sensitivity = controller->positionSensitivity;
-            // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
-            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= controller->speedupFactor;
-
-            // We change the camera position based on the keys WASD/QE
-            // S & W moves the player back and forth
-            if(app->getKeyboard().isPressed(GLFW_KEY_W)) position += front * (deltaTime * current_sensitivity.z);
-            if(app->getKeyboard().isPressed(GLFW_KEY_S)) position -= front * (deltaTime * current_sensitivity.z);
-            // Q & E moves the player up and down
-            if(app->getKeyboard().isPressed(GLFW_KEY_Q)) position += up * (deltaTime * current_sensitivity.y);
-            if(app->getKeyboard().isPressed(GLFW_KEY_E)) position -= up * (deltaTime * current_sensitivity.y);
-            // A & D moves the player left or right 
-            if(app->getKeyboard().isPressed(GLFW_KEY_D)) position += right * (deltaTime * current_sensitivity.x);
-            if(app->getKeyboard().isPressed(GLFW_KEY_A)) position -= right * (deltaTime * current_sensitivity.x);
         }
 
         // When the state exits, it should call this function to ensure the mouse is unlocked
