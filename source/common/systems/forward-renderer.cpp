@@ -185,12 +185,33 @@ namespace our {
                 return true;
             return false;
         });
+
+        // Collect all lights in the scene
+        collectLights(world);
+
+
         for(auto& command : opaqueCommands){
             command.material->setup();
+           
+            // Setup lighting uniforms
+            if (auto litMaterial = dynamic_cast<LitMaterial*>(command.material); litMaterial) {
+                setupLighting(litMaterial->shader, camera);
+            }
+
+            // Set transform 
             glm::mat4 M = command.localToWorld;
             glm::mat4 MVP = VP * M;
+            command::mat4 MIT = glm::transpose(glm::inverse(M));
+
+            // Set common uniforms
             command.material->shader->set("transform", MVP);
+            command.material->shader->set("model", M);
+            command.material->shader->set("modelIT", MIT);
+            command.material->shader->set("eye", glm::vec3(camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1)));
+
+        // Draw the mesh
             command.mesh->draw();
+
         }
         // If there is a sky material, draw the sky
         if(this->skyMaterial){
@@ -236,6 +257,53 @@ namespace our {
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
             glBindVertexArray(0);
+        }
+    }
+
+
+    void ForwardRenderer::collectLights(World* world) {
+        lights.clear();
+        for (auto entity : world->getEntities()) {
+            if (auto light = entity->getComponent<LightComponent>(); light) {
+                lights.push_back(light);
+            }
+        }
+    }
+
+
+
+
+    void ForwardRenderer::setupLighting(ShaderProgram* shader, const CameraComponent* camera) {
+        // Set ambient light
+        shader->set("ambientLightColor", ambientLightColor);
+
+        // Set light counts
+        int lightCount = std::min(static_cast<int>(lights.size()), MAX_LIGHTS);
+        shader->set("lightCount", lightCount);
+
+
+        //Setup each light
+        for (int i = 0; i < lightCount; ++i) {
+            const LightComponent* light = lights[i];
+
+            // Set light properties
+            std::string baseName = "lights[" + std::to_string(i) + "]";
+            shader->set(baseName + ".type", static_cast<int>(light->lightType));
+            shader->set(baseName + ".color", light->color);
+            shader->set(baseName + ".intensity", light->intensity);
+            shader->set(baseName + ".attenuation", light->attenuation);
+
+            // Set light-specific properties
+            if (light->lightType == LightType::DIRECTIONAL) {
+                shader->set(baseName + ".direction", light->getDirection());
+            } else if (light->lightType == LightType::POINT) {
+               shader->set(baseName + ".position", light->getPosition());
+            } else if (light->lightType == LightType::SPOT) {
+                shader->set(baseName + ".position", light->getPosition());
+                shader->set(baseName + ".direction", light->getDirection());
+                shader->set(baseName + ".innerCone", light->innerCone);
+                shader->set(baseName + ".outerCone", light->outerCone);
+            }
         }
     }
 

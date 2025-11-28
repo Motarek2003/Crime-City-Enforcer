@@ -40,6 +40,10 @@ namespace our
         GLuint postprocessFrameBuffer, postProcessVertexArray;
         Texture2D *colorTarget, *depthTarget;
         TexturedMaterial* postprocessMaterial;
+
+        // Lighting Data
+        std::vector<LightComponent*> lights;
+        glm:: vec3 ambientLightColor = glm:: vec3(0.1f);
     public:
         // Initialize the renderer including the sky and the Postprocessing objects.
         // windowSize is the width & height of the window (in pixels).
@@ -48,6 +52,16 @@ namespace our
         void destroy();
         // This function should be called every frame to draw the given world
         void render(World* world);
+
+        void setAmbientLightColor(const glm::vec3& color) {
+            ambientLightColor = color;
+        }
+
+        // Collect all lights from the world
+        void collectLights(World* world);
+
+        // Setup lighting uniforms in the shader
+        void setupLighting(ShaderProgram* shader, const CameraComponent* camera);
 
 
     };
