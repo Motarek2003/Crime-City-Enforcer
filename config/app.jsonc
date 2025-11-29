@@ -35,14 +35,16 @@
         "wood": "assets/textures/wood.jpg",
         "glass": "assets/textures/glass-panels.png",
         "monkey": "assets/textures/monkey.png",
-        "character": "assets/textures/Character_BaseColor.png"
+        "character": "assets/textures/Character_BaseColor.png",
+        "gun": "assets/textures/deagle.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
         "monkey": "assets/models/monkey.obj",
         "plane": "assets/models/plane.obj",
         "sphere": "assets/models/sphere.obj",
-        "character": "assets/models/Character.obj"
+        "character": "assets/models/Character.obj",
+        "gun": "assets/models/desert_eagle.obj"
       },
       "samplers": {
         "default": {},
@@ -68,6 +70,24 @@
           "ambient": [1, 1, 1],
           "albedo": "character",
           "sampler": "default"
+        },
+        "gun": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "gun",
+          "sampler": "pixelated"
         },
         "metal": {
           "type": "lit",
@@ -123,7 +143,7 @@
           },
           "tint": [1, 1, 1, 1],
           "diffuse": [1, 1, 1],
-          "specular_color": [1, 1, 1],
+          "specular_color": [0.1, 0.1, 0.1],
           "ambient": [1, 1, 1],
           "albedo": "grass",
           "sampler": "default"
@@ -188,6 +208,20 @@
           },
           {
             "type": "Character"
+          }
+        ],
+        "children": [
+          {
+            "scale": [6, 6, 6],
+            "rotation": [0, 90, 0],
+            "position": [-80, 150, 20],
+            "components": [
+              {
+                "type": "Mesh Renderer",
+                "mesh": "gun",
+                "material": "gun"
+              }
+            ]
           }
         ]
       },
@@ -304,34 +338,45 @@
           }
         ]
       },
+      // {
+      //   "position": [0, 10, 0],
+      //   "rotation": [45, 45, 0],
+      //   "scale": [5, 5, 5],
+      //   "components": [
+      //     {
+      //       "type": "Mesh Renderer",
+      //       "mesh": "sphere",
+      //       "material": "moon"
+      //     },
+      //     {
+      //       "type": "Movement",
+      //       "angularVelocity": [0, 90, 0]
+      //     }
+      //   ]
+      // },
+      // {
+      //   "position": [-5, 10, -5],
+      //   "rotation": [0, 0, 0],
+      //   "components": [
+      //     {
+      //       "type": "Light",
+      //       "lightType": "Point",
+      //       "color": [1, 1, 1],
+      //       "attenuation": [1, 0, 0],
+      //       "direction": [0, -1, 0],
+      //       "inner_cone_angle": "20",
+      //       "outer_cone_angle": "30"
+      //     }
+      //   ]
+      // }
       {
         "position": [0, 10, 0],
-        "rotation": [45, 45, 0],
-        "scale": [5, 5, 5],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "sphere",
-            "material": "moon"
-          },
-          {
-            "type": "Movement",
-            "angularVelocity": [0, 90, 0]
-          }
-        ]
-      },
-      {
-        "position": [-5, 10, -5],
-        "rotation": [0, 0, 0],
+        "rotation": [-45, 45, 0],
         "components": [
           {
             "type": "Light",
-            "lightType": "Point",
-            "color": [1, 1, 1],
-            "attenuation": [1, 0, 0],
-            "direction": [0, -1, 0],
-            "inner_cone_angle": "20",
-            "outer_cone_angle": "30"
+            "lightType": "Directional",
+            "color": [1, 1, 1]
           }
         ]
       }

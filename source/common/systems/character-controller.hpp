@@ -49,9 +49,9 @@ namespace our
             characterTransform.rotation.y = cameraEntity->localTransform.rotation.y;
             glm::mat4 matrix = characterTransform.toMat4();
 
-            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, 1, 0)),
-                      up = glm::vec3(matrix * glm::vec4(0, -1, 0, 0)), 
-                      right = glm::vec3(matrix * glm::vec4(-1, 0, 0, 0));
+            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, 5, 0)),
+                      up = glm::vec3(matrix * glm::vec4(0, -5, 0, 0)), 
+                      right = glm::vec3(matrix * glm::vec4(-5, 0, 0, 0));
 
             glm::vec3 current_sensitivity = {-30.0f, -30.0f, -30.0f};
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
