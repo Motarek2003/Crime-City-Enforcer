@@ -36,7 +36,8 @@
         "glass": "assets/textures/glass-panels.png",
         "monkey": "assets/textures/monkey.png",
         "character": "assets/textures/Character_BaseColor.png",
-        "gun": "assets/textures/deagle.png"
+        "gun": "assets/textures/deagle.png",
+        "katana": "assets/textures/Kat.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -44,7 +45,8 @@
         "plane": "assets/models/plane.obj",
         "sphere": "assets/models/sphere.obj",
         "character": "assets/models/Character.obj",
-        "gun": "assets/models/desert_eagle.obj"
+        "gun": "assets/models/desert_eagle.obj",
+        "katana": "assets/models/Katana.obj"
       },
       "samplers": {
         "default": {},
@@ -87,6 +89,24 @@
           "specular_color": [1, 1, 1],
           "ambient": [1, 1, 1],
           "albedo": "gun",
+          "sampler": "pixelated"
+        },
+        "katana": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "katana",
           "sampler": "pixelated"
         },
         "metal": {
@@ -208,18 +228,68 @@
           },
           {
             "type": "Character"
+          },
+          {
+            "type": "Inventory",
+            "slots": [
+              ["player_katana", "player_katana_2"],
+              ["player_gun", "player_gun_2"],
+              ["player_gun", "player_katana"],
+              [],
+              []
+            ]
           }
         ],
         "children": [
           {
-            "scale": [6, 6, 6],
+            "name": "player_gun",
+            "scale": [5, 5, 5],
             "rotation": [0, 90, 0],
-            "position": [-80, 150, 20],
+            "position": [-80, 140, 20],
             "components": [
               {
                 "type": "Mesh Renderer",
                 "mesh": "gun",
                 "material": "gun"
+              }
+            ]
+          },
+          {
+            "name": "player_gun_2",
+            "scale": [5, 5, 5],
+            "rotation": [0, 90, 0],
+            "position": [80, 140, 20],
+            "components": [
+              {
+                "type": "Mesh Renderer",
+                "mesh": "gun",
+                "material": "gun"
+              }
+            ]
+          },
+          {
+            "name": "player_katana",
+            "scale": [7, 7, 7],
+            "rotation": [90, 90, 0],
+            "position": [80, 148, 20],
+            "components": [
+              {
+                "type": "Mesh Renderer",
+                "mesh": "katana",
+                "material": "katana"
+              }
+            ]
+          },
+          {
+            "name": "player_katana_2",
+            "scale": [7, 7, 7],
+            "rotation": [90, 90, 0],
+            "position": [-80, 148, 20],
+            "components": [
+              {
+                "type": "Mesh Renderer",
+                "mesh": "katana",
+                "material": "katana"
               }
             ]
           }

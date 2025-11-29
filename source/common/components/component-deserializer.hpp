@@ -7,6 +7,7 @@
 #include "movement.hpp"
 #include "character.hpp"
 #include "light.hpp"
+#include "inventory.hpp"
 
 namespace our {
 
@@ -28,6 +29,8 @@ namespace our {
             component = entity->addComponent<CharacterComponent>();
         } else if(type == LightComponent::getID()){
             component = entity->addComponent<LightComponent>();
+        } else if(type == InventoryComponent::getID()){
+            component = entity->addComponent<InventoryComponent>();
         }
         if(component) component->deserialize(data);
     }
