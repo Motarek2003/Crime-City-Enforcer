@@ -93,15 +93,16 @@ namespace our
                 new_Direction -= right;
             } 
 
-
-            if(glm::length(new_Direction) > 0) 
+            if (app->getMouse().isPressed(GLFW_MOUSE_BUTTON_2)) {
+                rotation.y = cameraEntity->localTransform.rotation.y + glm::pi<float>();
+            }
+            else if(glm::length(new_Direction) > 0) 
             {
                 new_Direction = glm::normalize(new_Direction);
                 float targetAngle = glm::atan(-new_Direction.x, -new_Direction.z);
 
                 rotation.y = targetAngle; 
             }
-
         }
 
         // When the state exits, it should call this function to ensure the mouse is unlocked
