@@ -59,4 +59,86 @@ namespace our {
         sampler = AssetLoader<Sampler>::get(data.value("sampler", ""));
     }
 
+    void LitMaterial::setup() const {
+        TexturedMaterial::setup();
+        
+        if(albedo){
+            glActiveTexture(GL_TEXTURE0);
+            albedo->bind();
+            if(sampler) sampler->bind(0);
+            shader->set("material.albedo", 0);
+            //shader->set("material.has_albedo", true);
+        } 
+        // else {
+        //     shader->set("material.has_albedo", false);
+        // }
+
+        if(specular){
+            glActiveTexture(GL_TEXTURE1);
+            specular->bind();
+            if(sampler) sampler->bind(1);
+            shader->set("material.specular", 1);
+            //shader->set("material.has_specular", true);
+        } 
+        // else {
+        //     shader->set("material.has_specular", false);
+        // }
+
+        if(roughness){
+            glActiveTexture(GL_TEXTURE2);
+            roughness->bind();
+            if(sampler) sampler->bind(2);
+            shader->set("material.roughness", 2);
+            //shader->set("material.has_roughness", true);
+        } 
+        // else {
+        //     shader->set("material.has_roughness", false);
+        // }
+
+        if(ambientOcclusion){
+            glActiveTexture(GL_TEXTURE3);
+            ambientOcclusion->bind();
+            if(sampler) sampler->bind(3);
+            shader->set("material.ambient_occlusion", 3);
+            //shader->set("material.has_ambient_occlusion", true);
+        } 
+        // else {
+        //     shader->set("material.has_ambient_occlusion", false);
+        // }
+
+        if(emissive){
+            glActiveTexture(GL_TEXTURE4);
+            emissive->bind();
+            if(sampler) sampler->bind(4);
+            shader->set("material.emissive", 4);
+            //shader->set("material.has_emissive", true);
+        } 
+        // else {
+        //     shader->set("material.has_emissive", false);
+        // }
+
+        shader->set("material.diffuse", diffuse);
+        shader->set("material.specular_color", specularColor);
+        shader->set("material.ambient", ambient);
+        
+        glActiveTexture(GL_TEXTURE0); // Reset to default
+    }
+
+    void LitMaterial::deserialize(const nlohmann::json& data){
+        TintedMaterial::deserialize(data);
+        if(!data.is_object()) return;
+
+        albedo = AssetLoader<Texture2D>::get(data.value("albedo", ""));
+        specular = AssetLoader<Texture2D>::get(data.value("specular", ""));
+        roughness = AssetLoader<Texture2D>::get(data.value("roughness", ""));
+        ambientOcclusion = AssetLoader<Texture2D>::get(data.value("ambient_occlusion", ""));
+        emissive = AssetLoader<Texture2D>::get(data.value("emissive", ""));
+        
+        sampler = AssetLoader<Sampler>::get(data.value("sampler", ""));
+
+        diffuse = data.value("diffuse", glm::vec3(1.0f));
+        specularColor = data.value("specular_color", glm::vec3(1.0f));
+        ambient = data.value("ambient", glm::vec3(1.0f));
+    }
+
 }

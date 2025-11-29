@@ -1,6 +1,7 @@
 #include "forward-renderer.hpp"
 #include "../mesh/mesh-utils.hpp"
 #include "../texture/texture-utils.hpp"
+#include "../components/light.hpp"
 
 namespace our {
 
@@ -121,9 +122,15 @@ namespace our {
         CameraComponent* camera = nullptr;
         opaqueCommands.clear();
         transparentCommands.clear();
+        std::vector<LightComponent*> lights;
         for(auto entity : world->getEntities()){
             // If we hadn't found a camera yet, we look for a camera in this entity
             if(!camera) camera = entity->getComponent<CameraComponent>();
+            
+            if(auto light = entity->getComponent<LightComponent>(); light){
+                lights.push_back(light);
+            }
+
             // If this entity has a mesh renderer component
             if(auto meshRenderer = entity->getComponent<MeshRendererComponent>(); meshRenderer){
                 // We construct a command from it
@@ -159,6 +166,7 @@ namespace our {
 
         //TODO: (Req 9) Get the camera ViewProjection matrix and store it in VP
         glm::mat4 VP = camera->getProjectionMatrix(windowSize) * camera->getViewMatrix();
+        glm::vec3 cameraPosition = camera->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1);
         //TODO: (Req 9) Set the OpenGL viewport using viewportStart and viewportSize
         glViewport(0, 0, windowSize.x, windowSize.y);
         //TODO: (Req 9) Set the clear color to black and the clear depth to 1
@@ -190,6 +198,39 @@ namespace our {
             glm::mat4 M = command.localToWorld;
             glm::mat4 MVP = VP * M;
             command.material->shader->set("transform", MVP);
+            
+            // Set light uniforms
+            command.material->shader->set("M", M);
+            command.material->shader->set("M_IT", glm::transpose(glm::inverse(M)));
+            command.material->shader->set("VP", VP);
+            command.material->shader->set("camera_position", cameraPosition);
+            command.material->shader->set("light_count", (int)lights.size());
+            command.material->shader->set("ambient_light", glm::vec3(0.1f)); // Default ambient
+
+            for(int i = 0; i < lights.size(); ++i){
+                LightComponent* light = lights[i];
+                glm::vec3 lightPos = light->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1);
+
+                std::string prefix = "lights[" + std::to_string(i) + "].";
+                command.material->shader->set(prefix + "type", (int)lights[i]->lightType);
+                command.material->shader->set(prefix + "position", lightPos);
+
+                if (light->lightType == LightType::DIRECTIONAL) {
+                    glm::vec3 direction = glm::vec3(light->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0));
+                    command.material->shader->set(prefix + "direction", glm::normalize(direction));
+                }
+                else if (light->lightType == LightType::SPOT) {
+                    glm::vec3 direction = glm::vec3(light->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0));
+                    command.material->shader->set(prefix + "direction", glm::normalize(direction));
+                    command.material->shader->set(prefix + "inner_cone", glm::radians(lights[i]->innerCone));
+                    command.material->shader->set(prefix + "outer_cone", glm::radians(lights[i]->outerCone));
+                }
+
+                command.material->shader->set(prefix + "color", lights[i]->color * lights[i]->intensity);
+                command.material->shader->set(prefix + "attenuation", lights[i]->attenuation);
+
+            }
+
             command.mesh->draw();
         }
         // If there is a sky material, draw the sky
@@ -222,6 +263,38 @@ namespace our {
             glm::mat4 M = command.localToWorld;
             glm::mat4 MVP = VP * M;
             command.material->shader->set("transform", MVP);
+
+            // Set light uniforms
+            LitMaterial *litMaterial = dynamic_cast<LitMaterial *>(command.material);
+            command.material->shader->set("M", M);
+            command.material->shader->set("M_IT", glm::transpose(glm::inverse(M)));
+            command.material->shader->set("VP", VP);
+            command.material->shader->set("camera_position", cameraPosition);
+            command.material->shader->set("light_count", (int)lights.size());
+            command.material->shader->set("ambient_light", glm::vec3(0.1f)); // Default ambient
+
+            for(int i = 0; i < lights.size(); ++i){
+                std::string prefix = "lights[" + std::to_string(i) + "].";
+                command.material->shader->set(prefix + "type", (int)lights[i]->lightType);
+
+                glm::vec3 lightPos = lights[i]->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1);
+                command.material->shader->set(prefix + "position", lightPos);
+
+                if (lights[i]->lightType == LightType::DIRECTIONAL) {
+                    glm::vec3 direction = glm::vec3(lights[i]->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0));
+                    command.material->shader->set(prefix + "direction", glm::normalize(direction));
+                }
+                else if (lights[i]->lightType == LightType::SPOT) {
+                    glm::vec3 direction = glm::vec3(lights[i]->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0));
+                    command.material->shader->set(prefix + "direction", glm::normalize(direction));
+                    command.material->shader->set(prefix + "inner_cone", glm::radians(lights[i]->innerCone));
+                    command.material->shader->set(prefix + "outer_cone", glm::radians(lights[i]->outerCone));
+                }
+
+                command.material->shader->set(prefix + "color", lights[i]->color * lights[i]->intensity);
+                command.material->shader->set(prefix + "attenuation", lights[i]->attenuation);
+            }
+
             command.mesh->draw();
         }
 
