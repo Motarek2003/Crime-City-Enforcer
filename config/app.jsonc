@@ -1,7 +1,7 @@
 {
   "start-scene": "menu",
   "window": {
-    "title": "Default Game Window",
+    "title": "The Crime City Enforcer",
     "size": {
       "width": 1280,
       "height": 720
@@ -23,6 +23,10 @@
         "textured": {
           "vs": "assets/shaders/textured.vert",
           "fs": "assets/shaders/textured.frag"
+        },
+        "lit": {
+          "vs": "assets/shaders/light.vert",
+          "fs": "assets/shaders/light.frag"
         }
       },
       "textures": {
@@ -48,8 +52,8 @@
       },
       "materials": {
         "character": {
-          "type": "textured",
-          "shader": "textured",
+          "type": "lit",
+          "shader": "lit",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -59,12 +63,15 @@
             }
           },
           "tint": [1, 1, 1, 1],
-          "texture": "character",
+          "diffuse": [1, 1, 1],
+          "specular_color": [0.1, 0.1, 0.1],
+          "ambient": [1, 1, 1],
+          "albedo": "character",
           "sampler": "default"
         },
         "metal": {
-          "type": "tinted",
-          "shader": "tinted",
+          "type": "lit",
+          "shader": "lit",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -73,11 +80,14 @@
               "enabled": true
             }
           },
-          "tint": [0.45, 0.4, 0.5, 1]
+          "tint": [0.45, 0.4, 0.5, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1]
         },
         "glass": {
-          "type": "textured",
-          "shader": "textured",
+          "type": "lit",
+          "shader": "lit",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -94,12 +104,15 @@
           },
           "transparent": true,
           "tint": [1, 1, 1, 1],
-          "texture": "glass",
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "glass",
           "sampler": "pixelated"
         },
         "grass": {
-          "type": "textured",
-          "shader": "textured",
+          "type": "lit",
+          "shader": "lit",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -109,12 +122,15 @@
             }
           },
           "tint": [1, 1, 1, 1],
-          "texture": "grass",
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "grass",
           "sampler": "default"
         },
         "monkey": {
-          "type": "textured",
-          "shader": "textured",
+          "type": "lit",
+          "shader": "lit",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -124,12 +140,15 @@
             }
           },
           "tint": [1, 1, 1, 1],
-          "texture": "monkey",
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "monkey",
           "sampler": "default"
         },
         "moon": {
-          "type": "textured",
-          "shader": "textured",
+          "type": "lit",
+          "shader": "lit",
           "pipelineState": {
             "faceCulling": {
               "enabled": false
@@ -139,7 +158,10 @@
             }
           },
           "tint": [1, 1, 1, 1],
-          "texture": "moon",
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "moon",
           "sampler": "default"
         }
       }
@@ -295,6 +317,21 @@
           {
             "type": "Movement",
             "angularVelocity": [0, 90, 0]
+          }
+        ]
+      },
+      {
+        "position": [-5, 10, -5],
+        "rotation": [0, 0, 0],
+        "components": [
+          {
+            "type": "Light",
+            "lightType": "Point",
+            "color": [1, 1, 1],
+            "attenuation": [1, 0, 0],
+            "direction": [0, -1, 0],
+            "inner_cone_angle": "20",
+            "outer_cone_angle": "30"
           }
         ]
       }
