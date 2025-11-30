@@ -1,0 +1,46 @@
+﻿VENDOR          : NVIDIA Corporation
+RENDERER        : NVIDIA GeForce GTX 1650 Ti/PCIe/SSE2
+VERSION         : 3.3.0 NVIDIA 581.08
+GLSL VERSION    : 3.30 NVIDIA via Cg compiler
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 1 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 2 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131218 (type: PERFORMANCE) of MEDIUM raised from API: Program/shader state performance warning: Vertex shader in program 1 is being recompiled based on GL state.
+OpenGL Debug Message 131218 (type: PERFORMANCE) of MEDIUM raised from API: Program/shader state performance warning: Vertex shader in program 4 is being recompiled based on GL state.
+WARN while loading obj file "assets/models/Character.obj": Material file [ VampKila.mtl ] not found in a path : 
+Failed to load material file(s). Use default material.
+material [ 'MERGED' ] not found in .mtl
+
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 1 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 2 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 5 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 6 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+WARN while loading obj file "assets/models/desert_eagle.obj": Material file [ Desert_Eagle.mtl ] not found in a path : 
+Failed to load material file(s). Use default material.
+material [ 'Gun' ] not found in .mtl
+material [ 'Gun' ] not found in .mtl
+material [ 'Gun' ] not found in .mtl
+material [ 'Gun' ] not found in .mtl
+material [ 'Gun' ] not found in .mtl
+material [ 'Gun' ] not found in .mtl
+material [ 'Bullet' ] not found in .mtl
+material [ 'Bullet' ] not found in .mtl
+material [ 'Mag' ] not found in .mtl
+material [ 'Bullet' ] not found in .mtl
+material [ 'Mag' ] not found in .mtl
+
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 7 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 8 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+WARN while loading obj file "assets/models/Katana.obj": Material file [ Katana.mtl ] not found in a path : 
+Failed to load material file(s). Use default material.
+material [ 'Материал' ] not found in .mtl
+
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 9 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 10 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 11 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 12 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 13 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 14 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 15 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 16 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 17 (bound to GL_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.
+OpenGL Debug Message 131185 (type: OTHER) of NOTIFICATION raised from API: Buffer detailed info: Buffer object 18 (bound to GL_ELEMENT_ARRAY_BUFFER_ARB, usage hint is GL_STATIC_DRAW) will use VIDEO memory as the source for buffer object operations.

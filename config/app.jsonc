@@ -37,7 +37,8 @@
         "monkey": "assets/textures/monkey.png",
         "character": "assets/textures/Character_BaseColor.png",
         "gun": "assets/textures/deagle.png",
-        "katana": "assets/textures/Kat.png"
+        "katana": "assets/textures/Kat.png",
+        "deadpool": "assets/textures/Baking.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -46,7 +47,8 @@
         "sphere": "assets/models/sphere.obj",
         "character": "assets/models/Character.obj",
         "gun": "assets/models/desert_eagle.obj",
-        "katana": "assets/models/Katana.obj"
+        "katana": "assets/models/Katana.obj",
+        "deadpool": "assets/models/Deadpool_baked.fbx"
       },
       "samplers": {
         "default": {},
@@ -55,6 +57,24 @@
         }
       },
       "materials": {
+        "deadpool": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [0.2, 0.2, 0.2],
+          "ambient": [1, 1, 1],
+          "albedo": "deadpool",
+          "sampler": "default"
+        },
         "character": {
           "type": "lit",
           "shader": "lit",
@@ -217,14 +237,15 @@
         ]
       },
       {
-        "scale": [0.01, 0.01, 0.01],
+        "name": "deadpool",
+        "scale": [0.00025, 0.00025, 0.00025],
         "rotation": [0, 180, 0],
         "position": [0, 0, 10],
         "components": [
           {
             "type": "Mesh Renderer",
-            "mesh": "character",
-            "material": "character"
+            "mesh": "deadpool",
+            "material": "deadpool"
           },
           {
             "type": "Character"
@@ -243,9 +264,9 @@
         "children": [
           {
             "name": "player_gun",
-            "scale": [5, 5, 5],
+            "scale": [200, 200, 200],
             "rotation": [0, 90, 0],
-            "position": [-80, 140, 20],
+            "position": [-2400, 3200, 500],
             "components": [
               {
                 "type": "Mesh Renderer",
@@ -256,9 +277,9 @@
           },
           {
             "name": "player_gun_2",
-            "scale": [5, 5, 5],
+            "scale": [200, 200, 200],
             "rotation": [0, 90, 0],
-            "position": [80, 140, 20],
+            "position": [2400, 3200, 500],
             "components": [
               {
                 "type": "Mesh Renderer",
@@ -269,9 +290,9 @@
           },
           {
             "name": "player_katana",
-            "scale": [7, 7, 7],
+            "scale": [700, 700, 700],
             "rotation": [90, 90, 0],
-            "position": [80, 148, 20],
+            "position": [2400, 4000, 1000],
             "components": [
               {
                 "type": "Mesh Renderer",
@@ -282,9 +303,9 @@
           },
           {
             "name": "player_katana_2",
-            "scale": [7, 7, 7],
+            "scale": [700, 700, 700],
             "rotation": [90, 90, 0],
-            "position": [-80, 148, 20],
+            "position": [-2200, 4000, 1000],
             "components": [
               {
                 "type": "Mesh Renderer",

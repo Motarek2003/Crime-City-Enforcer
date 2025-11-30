@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 4.0.0)   # Selects the minimum version of CMake required to run this file
 project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and version
 
+# Assimp library for FBX support - using local installation in vendor folder
+set(ASSIMP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/assimp/include")
+set(ASSIMP_LIBRARY "${CMAKE_SOURCE_DIR}/vendor/assimp/lib/x64/assimp-vc143-mt.lib")
+
 # Linux compatibility
 if(UNIX AND NOT APPLE)
         find_package(OpenGL REQUIRED)
@@ -126,7 +130,8 @@ set(STATES_SOURCES
 # Each target compiles one example source file and the common & vendor source files
 # Then we link GLFW with each target
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION glfw)
+target_link_libraries(GAME_APPLICATION glfw ${ASSIMP_LIBRARY})
+target_include_directories(GAME_APPLICATION PRIVATE ${ASSIMP_INCLUDE_DIR})
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL)

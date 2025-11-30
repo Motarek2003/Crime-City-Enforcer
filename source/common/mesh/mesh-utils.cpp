@@ -4,9 +4,93 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobj/tiny_obj_loader.h>
 
+// Assimp for loading FBX and other formats
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+
+// Helper function to convert Assimp types to GLM
+static glm::vec3 toGlm(const aiVector3D& v) {
+    return glm::vec3(v.x, v.y, v.z);
+}
+
+static glm::vec2 toGlm2(const aiVector3D& v) {
+    return glm::vec2(v.x, v.y);
+}
+
+our::Mesh* our::mesh_utils::loadMesh(const std::string& filename) {
+    Assimp::Importer importer;
+    
+    const aiScene* scene = importer.ReadFile(filename,
+        aiProcess_Triangulate |
+        aiProcess_GenNormals |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_PreTransformVertices  // Bake all node transforms into vertices
+    );
+    
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        std::cerr << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
+        return nullptr;
+    }
+    
+    std::vector<our::Vertex> vertices;
+    std::vector<GLuint> elements;
+    
+    // Process all meshes in the scene
+    for (unsigned int m = 0; m < scene->mNumMeshes; m++) {
+        aiMesh* mesh = scene->mMeshes[m];
+        unsigned int baseVertex = vertices.size();
+        
+        // Process vertices
+        for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+            our::Vertex vertex;
+            
+            vertex.position = toGlm(mesh->mVertices[i]);
+            
+            if (mesh->HasNormals()) {
+                vertex.normal = toGlm(mesh->mNormals[i]);
+            } else {
+                vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f);
+            }
+            
+            if (mesh->mTextureCoords[0]) {
+                vertex.tex_coord = toGlm2(mesh->mTextureCoords[0][i]);
+            } else {
+                vertex.tex_coord = glm::vec2(0.0f, 0.0f);
+            }
+            
+            if (mesh->HasVertexColors(0)) {
+                aiColor4D color = mesh->mColors[0][i];
+                vertex.color = our::Color(
+                    static_cast<uint8_t>(color.r * 255),
+                    static_cast<uint8_t>(color.g * 255),
+                    static_cast<uint8_t>(color.b * 255),
+                    static_cast<uint8_t>(color.a * 255)
+                );
+            } else {
+                vertex.color = our::Color(255, 255, 255, 255);
+            }
+            
+            vertices.push_back(vertex);
+        }
+        
+        // Process indices
+        for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+            aiFace face = mesh->mFaces[i];
+            for (unsigned int j = 0; j < face.mNumIndices; j++) {
+                elements.push_back(baseVertex + face.mIndices[j]);
+            }
+        }
+    }
+    
+    std::cout << "Loaded mesh: " << filename << " with " << vertices.size() << " vertices and " << elements.size() << " indices" << std::endl;
+    
+    return new our::Mesh(vertices, elements);
+}
 
 our::Mesh* our::mesh_utils::loadOBJ(const std::string& filename) {
 
