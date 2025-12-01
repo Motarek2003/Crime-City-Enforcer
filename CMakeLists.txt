@@ -89,12 +89,19 @@ set(COMMON_SOURCES
         source/common/components/free-camera-controller.cpp
         source/common/components/movement.hpp
         source/common/components/movement.cpp
+        source/common/components/animator.hpp
+        source/common/components/animator.cpp
         source/common/components/component-deserializer.hpp
+
+        source/common/animation/bone.hpp
+        source/common/animation/animation.hpp
+        source/common/animation/animator.hpp
 
         source/common/systems/forward-renderer.hpp
         source/common/systems/forward-renderer.cpp
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
+        source/common/systems/animation-system.hpp
 )
 
 # Define the directories in which to search for the included headers

@@ -2,6 +2,8 @@
 
 #include "../components/character.hpp"
 #include "../components/free-camera-controller.hpp"
+#include "../components/animator.hpp"
+#include "../components/inventory.hpp"
 #include "../ecs/world.hpp"
 
 #include "../application.hpp"
@@ -20,11 +22,13 @@ namespace our
     // For more information, see "common/components/character-controller.hpp"
     class CharacterControllerSystem {
         Application* app; // The application in which the state runs
+        bool wasWalking = false;  // Track previous walking state
 
     public:
         // When a state enters, it should call this function and give it the pointer to the application
         void enter(Application* app){
             this->app = app;
+            wasWalking = false;
         }
 
         // This should be called every frame to update all entities containing a CharacterComponent 
@@ -49,11 +53,11 @@ namespace our
             characterTransform.rotation.y = cameraEntity->localTransform.rotation.y;
             glm::mat4 matrix = characterTransform.toMat4();
 
-            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, 10, 0)),
-                      up = glm::vec3(matrix * glm::vec4(0, -10, 0, 0)), 
-                      right = glm::vec3(matrix * glm::vec4(-10, 0, 0, 0));
+            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, 5, 0)),
+                      up = glm::vec3(matrix * glm::vec4(0, -5, 0, 0)), 
+                      right = glm::vec3(matrix * glm::vec4(-5, 0, 0, 0));
 
-            glm::vec3 current_sensitivity = {-300.0f, -300.0f, -300.0f};
+            glm::vec3 current_sensitivity = {-30.0f, -30.0f, -30.0f};
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
             if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= 5;
 
@@ -103,6 +107,46 @@ namespace our
 
                 rotation.y = targetAngle; 
             }
+
+            // Control walking animation based on movement
+            bool isWalking = app->getKeyboard().isPressed(GLFW_KEY_W) || 
+                             app->getKeyboard().isPressed(GLFW_KEY_S) ||
+                             app->getKeyboard().isPressed(GLFW_KEY_A) ||
+                             app->getKeyboard().isPressed(GLFW_KEY_D);
+            
+            // Get animator component and switch animations based on state
+            auto animator = entity->getComponent<AnimatorComponent>();
+            auto inventory = entity->getComponent<InventoryComponent>();
+            if (animator && animator->enabled) {
+                if (isWalking) {
+                    // Switch to walk animation if available
+                    if (inventory->activeSlot == 0){
+                        if (animator->hasAnimation("walk") && animator->getCurrentAnimationName() != "walk") {
+                            animator->setAnimation("walk");
+                            animator->play();
+                        }
+                    } else{
+                        if (animator->hasAnimation("GunWalk") && animator->getCurrentAnimationName() != "GunWalk"){
+                            animator->setAnimation("GunWalk");
+                            animator->play();
+                        }
+                    }
+                } else {
+                    // Switch to idle animation if available
+                    if(inventory->activeSlot == 0){
+                        if (animator->hasAnimation("idle") && animator->getCurrentAnimationName() != "idle") {
+                            animator->setAnimation("idle");
+                            animator->play();
+                        }                        
+                    } else {
+                        if (animator->hasAnimation("GunIdle") && animator->getCurrentAnimationName() != "GunIdle") {
+                            animator->setAnimation("GunIdle");
+                            animator->play();
+                        }
+                    }
+                }
+            }
+            wasWalking = isWalking;
         }
 
         // When the state exits, it should call this function to ensure the mouse is unlocked

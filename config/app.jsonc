@@ -238,14 +238,25 @@
       },
       {
         "name": "deadpool",
-        "scale": [0.00025, 0.00025, 0.00025],
+        "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, 0, 10],
+        "position": [0, -1, 10],
         "components": [
           {
             "type": "Mesh Renderer",
             "mesh": "deadpool",
             "material": "deadpool"
+          },
+          {
+            "type": "Animator",
+            "mesh": "assets/models/Deadpool_baked.fbx",
+            "animations": {
+              "idle": "assets/animations/Deadpool/Deadpool@Idle.fbx",
+              "walk": "assets/animations/Deadpool/Deadpool@Walking.fbx",
+              "GunIdle": "assets/animations/Deadpool/Deadpool@GunIdle.fbx",
+              "GunWalk": "assets/animations/Deadpool/Deadpool@GunWalk.fbx"
+            },
+            "enabled": true
           },
           {
             "type": "Character"
@@ -264,9 +275,9 @@
         "children": [
           {
             "name": "player_gun",
-            "scale": [200, 200, 200],
-            "rotation": [0, 90, 0],
-            "position": [-2400, 3200, 500],
+            "scale": [2, 2, 2],
+            "rotation": [0, 90, 15],
+            "position": [-8, 53, 27],
             "components": [
               {
                 "type": "Mesh Renderer",
@@ -277,9 +288,9 @@
           },
           {
             "name": "player_gun_2",
-            "scale": [200, 200, 200],
-            "rotation": [0, 90, 0],
-            "position": [2400, 3200, 500],
+            "scale": [2, 2, 2],
+            "rotation": [0, 90, 15],
+            "position": [4, 51, 29],
             "components": [
               {
                 "type": "Mesh Renderer",
@@ -290,9 +301,9 @@
           },
           {
             "name": "player_katana",
-            "scale": [700, 700, 700],
+            "scale": [7, 7, 7],
             "rotation": [90, 90, 0],
-            "position": [2400, 4000, 1000],
+            "position": [8, 40, 20],
             "components": [
               {
                 "type": "Mesh Renderer",
@@ -303,9 +314,9 @@
           },
           {
             "name": "player_katana_2",
-            "scale": [700, 700, 700],
+            "scale": [7, 7, 7],
             "rotation": [90, 90, 0],
-            "position": [-2200, 4000, 1000],
+            "position": [-8, 40, 20],
             "components": [
               {
                 "type": "Mesh Renderer",

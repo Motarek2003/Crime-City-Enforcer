@@ -9,6 +9,8 @@ namespace our {
     #define ATTRIB_LOC_COLOR    1
     #define ATTRIB_LOC_TEXCOORD 2
     #define ATTRIB_LOC_NORMAL   3
+    #define ATTRIB_LOC_BONE_IDS 4
+    #define ATTRIB_LOC_WEIGHTS  5
 
     class Mesh {
         // Here, we store the object names of the 3 main components of a mesh:
@@ -71,6 +73,14 @@ namespace our {
 
             glEnableVertexAttribArray(ATTRIB_LOC_NORMAL);
             glVertexAttribPointer(ATTRIB_LOC_NORMAL, 3, GL_FLOAT, GL_FALSE, stride, (const void*)offsetof(Vertex, normal));
+
+            // Bone IDs (integer attribute)
+            glEnableVertexAttribArray(ATTRIB_LOC_BONE_IDS);
+            glVertexAttribIPointer(ATTRIB_LOC_BONE_IDS, 4, GL_INT, stride, (const void*)offsetof(Vertex, boneIDs));
+
+            // Bone weights (float attribute)
+            glEnableVertexAttribArray(ATTRIB_LOC_WEIGHTS);
+            glVertexAttribPointer(ATTRIB_LOC_WEIGHTS, 4, GL_FLOAT, GL_FALSE, stride, (const void*)offsetof(Vertex, weights));
 
             // Unbind VAO (safe practice)
             glBindVertexArray(0);

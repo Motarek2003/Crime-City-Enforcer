@@ -139,6 +139,8 @@ namespace our {
                 command.center = glm::vec3(command.localToWorld * glm::vec4(0, 0, 0, 1));
                 command.mesh = meshRenderer->mesh;
                 command.material = meshRenderer->material;
+                // Check if entity has an animator component
+                command.animator = entity->getComponent<AnimatorComponent>();
                 // if it is transparent, we add it to the transparent commands list
                 if(command.material->transparent){
                     transparentCommands.push_back(command);
@@ -207,6 +209,17 @@ namespace our {
             command.material->shader->set("light_count", (int)lights.size());
             command.material->shader->set("ambient_light", glm::vec3(0.1f)); // Default ambient
 
+            // Set animation uniforms
+            if (command.animator && command.animator->enabled) {
+                command.material->shader->set("useAnimation", true);
+                const auto& boneMatrices = command.animator->getBoneMatrices();
+                for (int i = 0; i < boneMatrices.size() && i < 100; ++i) {
+                    command.material->shader->set("boneMatrices[" + std::to_string(i) + "]", boneMatrices[i]);
+                }
+            } else {
+                command.material->shader->set("useAnimation", false);
+            }
+
             for(int i = 0; i < lights.size(); ++i){
                 LightComponent* light = lights[i];
                 glm::vec3 lightPos = light->getOwner()->getLocalToWorldMatrix() * glm::vec4(0, 0, 0, 1);
@@ -272,6 +285,17 @@ namespace our {
             command.material->shader->set("camera_position", cameraPosition);
             command.material->shader->set("light_count", (int)lights.size());
             command.material->shader->set("ambient_light", glm::vec3(0.1f)); // Default ambient
+
+            // Set animation uniforms
+            if (command.animator && command.animator->enabled) {
+                command.material->shader->set("useAnimation", true);
+                const auto& boneMatrices = command.animator->getBoneMatrices();
+                for (int i = 0; i < boneMatrices.size() && i < 100; ++i) {
+                    command.material->shader->set("boneMatrices[" + std::to_string(i) + "]", boneMatrices[i]);
+                }
+            } else {
+                command.material->shader->set("useAnimation", false);
+            }
 
             for(int i = 0; i < lights.size(); ++i){
                 std::string prefix = "lights[" + std::to_string(i) + "].";

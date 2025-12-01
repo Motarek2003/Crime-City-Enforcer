@@ -8,6 +8,7 @@
 #include "mesh/mesh-utils.hpp"
 #include "material/material.hpp"
 #include "deserialize-utils.hpp"
+#include "animation/animation.hpp"
 
 namespace our {
 
@@ -61,15 +62,32 @@ namespace our {
     };
 
     // This will load all the meshes defined in "data"
-    // data must be in the form:
-    //    { mesh_name : "path/to/3d-model-file", ... }
+    // data can be in two forms:
+    //    { mesh_name : "path/to/3d-model-file", ... }  - for static meshes
+    //    { mesh_name : { "file": "path/to/3d-model-file", "skeletal": true }, ... }  - for skeletal meshes
     template<>
     void AssetLoader<Mesh>::deserialize(const nlohmann::json& data) {
         if(data.is_object()){
             for(auto& [name, desc] : data.items()){
-                std::string path = desc.get<std::string>();
-                // Use Assimp-based loader which supports OBJ, FBX, and other formats
-                assets[name] = mesh_utils::loadMesh(path);
+                std::string path;
+                bool isSkeletal = false;
+                
+                if (desc.is_string()) {
+                    path = desc.get<std::string>();
+                } else if (desc.is_object()) {
+                    path = desc.value("file", "");
+                    isSkeletal = desc.value("skeletal", false);
+                }
+                
+                if (isSkeletal) {
+                    // For skeletal meshes, we need a temporary bone info map
+                    // The real bone info will be loaded with the animator component
+                    std::map<std::string, BoneInfo> tempBoneInfo;
+                    assets[name] = mesh_utils::loadSkeletalMesh(path, tempBoneInfo);
+                } else {
+                    // Use Assimp-based loader which supports OBJ, FBX, and other formats
+                    assets[name] = mesh_utils::loadMesh(path);
+                }
             }
         }
     };
