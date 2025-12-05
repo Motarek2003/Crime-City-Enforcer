@@ -91,6 +91,7 @@ set(COMMON_SOURCES
         source/common/components/movement.cpp
         source/common/components/animator.hpp
         source/common/components/animator.cpp
+        source/common/components/bone-attachment.hpp
         source/common/components/component-deserializer.hpp
 
         source/common/animation/bone.hpp
@@ -102,6 +103,7 @@ set(COMMON_SOURCES
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
         source/common/systems/animation-system.hpp
+        source/common/systems/bone-attachment-system.hpp
 )
 
 # Define the directories in which to search for the included headers

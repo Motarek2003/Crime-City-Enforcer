@@ -36,7 +36,12 @@ namespace our {
         if (!meshPath.empty()) {
             skeletalMesh = mesh_utils::loadSkeletalMesh(meshPath, boneInfoMap);
             std::cout << "AnimatorComponent: Loaded skeletal mesh with " 
-                      << boneInfoMap.size() << " bones" << std::endl;
+                      << boneInfoMap.size() << " bones:" << std::endl;
+            
+            // Print all bone names for debugging
+            for (const auto& [boneName, boneInfo] : boneInfoMap) {
+                std::cout << "  - Bone: " << boneName << " (ID: " << boneInfo.id << ")" << std::endl;
+            }
         }
         
         // Load all animations using the same boneInfoMap

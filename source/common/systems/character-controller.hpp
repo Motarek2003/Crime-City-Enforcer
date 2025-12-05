@@ -23,12 +23,14 @@ namespace our
     class CharacterControllerSystem {
         Application* app; // The application in which the state runs
         bool wasWalking = false;  // Track previous walking state
+        bool isPlayingAttackAnimation = false;  // Track if attack animation is playing
 
     public:
         // When a state enters, it should call this function and give it the pointer to the application
         void enter(Application* app){
             this->app = app;
             wasWalking = false;
+            isPlayingAttackAnimation = false;
         }
 
         // This should be called every frame to update all entities containing a CharacterComponent 
@@ -53,9 +55,9 @@ namespace our
             characterTransform.rotation.y = cameraEntity->localTransform.rotation.y;
             glm::mat4 matrix = characterTransform.toMat4();
 
-            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, 5, 0)),
-                      up = glm::vec3(matrix * glm::vec4(0, -5, 0, 0)), 
-                      right = glm::vec3(matrix * glm::vec4(-5, 0, 0, 0));
+            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, 4, 0)),
+                      up = glm::vec3(matrix * glm::vec4(0, -4, 0, 0)), 
+                      right = glm::vec3(matrix * glm::vec4(-4, 0, 0, 0));
 
             glm::vec3 current_sensitivity = {-30.0f, -30.0f, -30.0f};
             // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
@@ -117,30 +119,110 @@ namespace our
             // Get animator component and switch animations based on state
             auto animator = entity->getComponent<AnimatorComponent>();
             auto inventory = entity->getComponent<InventoryComponent>();
+            bool isAttacking = app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1);
+            static bool leftAttackPressed = false;
+            
             if (animator && animator->enabled) {
-                if (isWalking) {
+                // Check if attack animation has finished
+                if (isPlayingAttackAnimation) {
+                    if (animator->isAnimationFinished()) {
+                        isPlayingAttackAnimation = false;
+                        // Reset to allow state machine to pick next animation
+                    }
+                }
+                
+                // Don't interrupt attack animations until they finish
+                if (isPlayingAttackAnimation && !animator->isAnimationFinished()) {
+                    // Let attack animation continue playing
+                }
+                else if (isAttacking) {
+                    // Switch to attack animation if available
+                    if (inventory->slots[inventory->activeSlot].empty()) {
+                        if (animator->hasAnimation("attack")) {
+                            animator->setAnimation("attack");
+                            animator->play();
+                            isPlayingAttackAnimation = true;
+                        }
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_gun") {
+                        if (animator->hasAnimation("GunAttack")) {
+                            animator->setAnimation("GunAttack");
+                            animator->play();
+                            isPlayingAttackAnimation = true;
+                        }
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_katana") {
+                        if (!leftAttackPressed && animator->hasAnimation("KatanaSlashL")) {
+                            animator->setAnimation("KatanaSlashL");
+                            animator->play();
+                            isPlayingAttackAnimation = true;
+                            leftAttackPressed = true;
+                        }
+                        else if (leftAttackPressed && animator->hasAnimation("KatanaSlashR")) {
+                            animator->setAnimation("KatanaSlashR");
+                            animator->play();
+                            isPlayingAttackAnimation = true;
+                            leftAttackPressed = false;
+                        }
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
+                        if (animator->hasAnimation("RifleShoot")) {
+                            animator->setAnimation("RifleShoot");
+                            animator->play();
+                            isPlayingAttackAnimation = true;
+                        }
+                    }
+                }
+                else if (isWalking) {
                     // Switch to walk animation if available
-                    if (inventory->activeSlot == 0){
+                    // if inventory active slots does not contain weapons use walk animation
+                    if (inventory->slots[inventory->activeSlot].empty()) {  
                         if (animator->hasAnimation("walk") && animator->getCurrentAnimationName() != "walk") {
                             animator->setAnimation("walk");
                             animator->play();
                         }
-                    } else{
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_gun"){
                         if (animator->hasAnimation("GunWalk") && animator->getCurrentAnimationName() != "GunWalk"){
                             animator->setAnimation("GunWalk");
+                            animator->play();
+                        }
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_katana"){
+                        if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
+                            if (animator->hasAnimation("KatanaRun") && animator->getCurrentAnimationName() != "KatanaRun"){
+                                animator->setAnimation("KatanaRun");
+                                animator->play();
+                            }
+                        }
+                        else {
+                            if (animator->hasAnimation("KatanaWalk") && animator->getCurrentAnimationName() != "KatanaWalk"){
+                                animator->setAnimation("KatanaWalk");
+                                animator->play();
+                            }
+                        }
+                    }
+                    else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
+                        if (animator->hasAnimation("RifleWalk") && animator->getCurrentAnimationName() != "RifleWalk") {
+                            animator->setAnimation("RifleWalk");
                             animator->play();
                         }
                     }
                 } else {
                     // Switch to idle animation if available
-                    if(inventory->activeSlot == 0){
+                    if(inventory->slots[inventory->activeSlot].empty()) {
                         if (animator->hasAnimation("idle") && animator->getCurrentAnimationName() != "idle") {
                             animator->setAnimation("idle");
                             animator->play();
                         }                        
-                    } else {
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_gun") {
                         if (animator->hasAnimation("GunIdle") && animator->getCurrentAnimationName() != "GunIdle") {
                             animator->setAnimation("GunIdle");
+                            animator->play();
+                        }
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_katana") {
+                        if (animator->hasAnimation("KatanaIdle") && animator->getCurrentAnimationName() != "KatanaIdle") {
+                            animator->setAnimation("KatanaIdle");
+                            animator->play();
+                        }
+                    } else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
+                        if (animator->hasAnimation("RifleIdle") && animator->getCurrentAnimationName() != "RifleIdle") {
+                            animator->setAnimation("RifleIdle");
                             animator->play();
                         }
                     }

@@ -55,6 +55,16 @@ namespace our {
         // Get current animation name
         const std::string& getCurrentAnimationName() const { return currentAnimationName; }
 
+        // Get global transform of a bone for attaching objects
+        bool getBoneTransform(const std::string& boneName, glm::mat4& outTransform) const {
+            return animator.getBoneGlobalTransform(boneName, outTransform);
+        }
+
+        // Get all available bone names
+        std::vector<std::string> getBoneNames() const {
+            return animator.getBoneNames();
+        }
+
         // Play the current animation
         void play() { animator.play(); }
         
@@ -63,6 +73,12 @@ namespace our {
         
         // Reset to the beginning
         void reset() { animator.reset(); }
+        
+        // Check if current animation has finished one cycle
+        bool isAnimationFinished() const { return animator.isAnimationFinished(); }
+        
+        // Get animation progress (0.0 to 1.0)
+        float getAnimationProgress() const { return animator.getAnimationProgress(); }
 
         // Update animation with delta time
         void update(float deltaTime) {

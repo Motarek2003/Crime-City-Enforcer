@@ -9,6 +9,7 @@
 #include "light.hpp"
 #include "inventory.hpp"
 #include "animator.hpp"
+#include "bone-attachment.hpp"
 
 namespace our {
 
@@ -34,6 +35,8 @@ namespace our {
             component = entity->addComponent<InventoryComponent>();
         } else if(type == AnimatorComponent::getID()){
             component = entity->addComponent<AnimatorComponent>();
+        } else if(type == BoneAttachmentComponent::getID()){
+            component = entity->addComponent<BoneAttachmentComponent>();
         }
         if(component) component->deserialize(data);
     }

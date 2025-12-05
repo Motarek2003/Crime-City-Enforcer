@@ -10,6 +10,7 @@
 #include <systems/character-controller.hpp>
 #include <systems/inventory-controller.hpp>
 #include <systems/animation-system.hpp>
+#include <systems/bone-attachment-system.hpp>
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate: public our::State {
@@ -21,6 +22,7 @@ class Playstate: public our::State {
     our::CharacterControllerSystem characterController;
     our::InventoryControllerSystem inventoryController;
     our::AnimationSystem animationSystem;
+    our::BoneAttachmentSystem boneAttachmentSystem;
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -89,6 +91,7 @@ class Playstate: public our::State {
         characterController.update(&world, (float)deltaTime);
         inventoryController.update(&world, (float)deltaTime);
         animationSystem.update(&world, (float)deltaTime);
+        boneAttachmentSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world);
 
@@ -107,6 +110,8 @@ class Playstate: public our::State {
         // On exit, we call exit for the camera controller system to make sure that the mouse is unlocked
         cameraController.exit();
         characterController.exit();
+        // Reset the animation system for next play
+        animationSystem.reset();
         // Clear the world
         world.clear();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
