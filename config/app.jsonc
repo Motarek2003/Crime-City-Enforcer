@@ -273,16 +273,22 @@
             "animations": {
               "idle": "assets/animations/Deadpool/Deadpool@Idle.fbx",
               "walk": "assets/animations/Deadpool/Deadpool@Walking.fbx",
+              "run": "assets/animations/Deadpool/Running.fbx",
+
               "GunIdle": "assets/animations/Deadpool/Deadpool@GunIdle.fbx",
               "GunWalk": "assets/animations/Deadpool/Deadpool@GunWalk.fbx",
+              "GunRun": "assets/animations/Deadpool/GunRun.fbx",
               "GunAttack": "assets/animations/Deadpool/Deadpool@DoubleShooting.fbx",
+
               "KatanaIdle": "assets/animations/Deadpool/KatanaIdle.fbx",
               "KatanaWalk": "assets/animations/Deadpool/KatanaWalk.fbx",
               "KatanaRun": "assets/animations/Deadpool/KatanaRun.fbx",
               "KatanaSlashR": "assets/animations/Deadpool/KatanaSlashR.fbx",
               "KatanaSlashL": "assets/animations/Deadpool/KatanaSlashL.fbx",
+
               "RifleIdle": "assets/animations/Deadpool/RifleIdle.fbx",
               "RifleWalk": "assets/animations/Deadpool/RifleWalk.fbx",
+              "RifleRun": "assets/animations/Deadpool/RifleRun.fbx",
               "RifleShoot": "assets/animations/Deadpool/RifleShoot.fbx"
             },
             "enabled": true
@@ -331,6 +337,10 @@
                   "GunAttack": {
                     "rotation": [-15, 0, 0],
                     "position": [-1, -1, 6]
+                  },
+                  "GunRun": {
+                    "rotation": [0, 0, 0],
+                    "position": [0, -2, 6]
                   }
                 }
               }
@@ -365,6 +375,10 @@
                   "GunAttack": {
                     "rotation": [15, 0, 0],
                     "position": [0, -1, 6]
+                  },
+                  "GunRun": {
+                    "rotation": [0, 0, 10],
+                    "position": [0, -2, 6]
                   }
                 }
               }
@@ -483,6 +497,10 @@
                   "RifleShoot": {
                     "rotation": [0, 0, 0],
                     "position": [0, 0, 9]
+                  },
+                  "RifleRun": {
+                    "rotation": [30, 45, 0],
+                    "position": [8, -4, 8]
                   }
                 }
               }
@@ -603,37 +621,37 @@
           }
         ]
       },
-      {
-        "position": [0, 10, 0],
-        "rotation": [45, 45, 0],
-        "scale": [5, 5, 5],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "sphere",
-            "material": "moon"
-          },
-          {
-            "type": "Movement",
-            "angularVelocity": [0, 90, 0]
-          }
-        ]
-      },
       // {
-      //   "position": [-5, 10, -5],
-      //   "rotation": [0, 0, 0],
+      //   "position": [0, 10, 0],
+      //   "rotation": [45, 45, 0],
+      //   "scale": [5, 5, 5],
       //   "components": [
       //     {
-      //       "type": "Light",
-      //       "lightType": "Point",
-      //       "color": [1, 1, 1],
-      //       "attenuation": [1, 0, 0],
-      //       "direction": [0, -1, 0],
-      //       "inner_cone_angle": "20",
-      //       "outer_cone_angle": "30"
+      //       "type": "Mesh Renderer",
+      //       "mesh": "sphere",
+      //       "material": "moon"
+      //     },
+      //     {
+      //       "type": "Movement",
+      //       "angularVelocity": [0, 90, 0]
       //     }
       //   ]
       // },
+      {
+        "position": [-5, 100, -5],
+        "rotation": [0, 0, 0],
+        "components": [
+          {
+            "type": "Light",
+            "lightType": "Point",
+            "color": [1, 1, 1],
+            "attenuation": [1, 0, 0],
+            "direction": [0, -1, 0],
+            "inner_cone_angle": "20",
+            "outer_cone_angle": "30"
+          }
+        ]
+      },
       {
         "position": [10, 100, 0],
         "rotation": [-45, 45, 0],

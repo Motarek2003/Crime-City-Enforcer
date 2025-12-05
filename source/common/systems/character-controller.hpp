@@ -174,14 +174,31 @@ namespace our
                     // Switch to walk animation if available
                     // if inventory active slots does not contain weapons use walk animation
                     if (inventory->slots[inventory->activeSlot].empty()) {  
-                        if (animator->hasAnimation("walk") && animator->getCurrentAnimationName() != "walk") {
+                        if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
+                            if (animator->hasAnimation("run") && animator->getCurrentAnimationName() != "run") {
+                                animator->setAnimation("run");
+                                animator->play();
+                            }
+                        }
+                        else  {
+                            if (animator->hasAnimation("walk") && animator->getCurrentAnimationName() != "walk") {
                             animator->setAnimation("walk");
                             animator->play();
+                            }
+                        } 
+                    }
+                    else if (inventory->slots[inventory->activeSlot][0] == "player_gun"){
+                        if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
+                            if (animator->hasAnimation("GunRun") && animator->getCurrentAnimationName() != "GunRun"){
+                                animator->setAnimation("GunRun");
+                                animator->play();
+                            }
                         }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_gun"){
-                        if (animator->hasAnimation("GunWalk") && animator->getCurrentAnimationName() != "GunWalk"){
-                            animator->setAnimation("GunWalk");
-                            animator->play();
+                        else {
+                            if (animator->hasAnimation("GunWalk") && animator->getCurrentAnimationName() != "GunWalk"){
+                                animator->setAnimation("GunWalk");
+                                animator->play();
+                            }
                         }
                     } else if (inventory->slots[inventory->activeSlot][0] == "player_katana"){
                         if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
@@ -198,9 +215,17 @@ namespace our
                         }
                     }
                     else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
-                        if (animator->hasAnimation("RifleWalk") && animator->getCurrentAnimationName() != "RifleWalk") {
-                            animator->setAnimation("RifleWalk");
-                            animator->play();
+                        if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
+                            if (animator->hasAnimation("RifleRun") && animator->getCurrentAnimationName() != "RifleRun") {
+                                animator->setAnimation("RifleRun");
+                                animator->play();
+                            }
+                        }
+                        else {
+                            if (animator->hasAnimation("RifleWalk") && animator->getCurrentAnimationName() != "RifleWalk") {
+                                animator->setAnimation("RifleWalk");
+                                animator->play();
+                            }
                         }
                     }
                 } else {
