@@ -7,9 +7,13 @@
 #include "movement.hpp"
 #include "character.hpp"
 #include "light.hpp"
+#include "collider.hpp"
+#include "rigidbody.hpp"
+
 #include "inventory.hpp"
 #include "animator.hpp"
 #include "bone-attachment.hpp"
+
 
 namespace our {
 
@@ -31,6 +35,10 @@ namespace our {
             component = entity->addComponent<CharacterComponent>();
         } else if(type == LightComponent::getID()){
             component = entity->addComponent<LightComponent>();
+        } else if(type == ColliderComponent::getID()){
+            component = entity->addComponent<ColliderComponent>();
+        } else if(type == RigidBodyComponent::getID()){
+            component = entity->addComponent<RigidBodyComponent>();
         } else if(type == InventoryComponent::getID()){
             component = entity->addComponent<InventoryComponent>();
         } else if(type == AnimatorComponent::getID()){

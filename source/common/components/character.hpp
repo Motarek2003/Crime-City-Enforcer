@@ -12,8 +12,16 @@ namespace our {
         // The ID of this component type is "Character"
         static std::string getID() { return "Character"; }
 
+        void onCollisionEnter(Entity* other);
+
+        int getHealth() { return health;}
+        void setHealth(int delta) { health += delta; }
+
         // Reads camera Character from the given json object
         void deserialize(const nlohmann::json& data) {return;}
+    private:
+        int health = 100;
+
 
     };
 

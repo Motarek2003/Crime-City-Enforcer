@@ -8,9 +8,15 @@
 #include <systems/movement.hpp>
 #include <asset-loader.hpp>
 #include <systems/character-controller.hpp>
+
+#include <systems/physics-system.hpp>
+#include <systems/lifetime-system.hpp>
+
+#include <iostream>
 #include <systems/inventory-controller.hpp>
 #include <systems/animation-system.hpp>
 #include <systems/bone-attachment-system.hpp>
+
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate: public our::State {
@@ -20,9 +26,13 @@ class Playstate: public our::State {
     our::FreeCameraControllerSystem cameraController;
     our::MovementSystem movementSystem;
     our::CharacterControllerSystem characterController;
+
+    our::PhysicsSystem physicsSystem;
+
     our::InventoryControllerSystem inventoryController;
     our::AnimationSystem animationSystem;
     our::BoneAttachmentSystem boneAttachmentSystem;
+
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -35,6 +45,10 @@ class Playstate: public our::State {
         if(config.contains("world")){
             world.deserialize(config["world"]);
         }
+
+        physicsSystem.initialize();
+        
+        physicsSystem.setDebugDrawEnabled(true);
         // We initialize the camera controller system since it needs a pointer to the app
         cameraController.enter(getApp());
         characterController.enter(getApp());
@@ -88,15 +102,25 @@ class Playstate: public our::State {
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
-        characterController.update(&world, (float)deltaTime);
+        characterController.update(&world, (float)deltaTime, &physicsSystem);
+        physicsSystem.update(&world, (float)deltaTime);
+        our::LifetimeSystem::update(&world, (float)deltaTime, physicsSystem.getBodyInterface());
         inventoryController.update(&world, (float)deltaTime);
         animationSystem.update(&world, (float)deltaTime);
         boneAttachmentSystem.update(&world, (float)deltaTime);
         // And finally we use the renderer system to draw the scene
-        renderer.render(&world);
+        renderer.render(&world, &physicsSystem);
 
         // Get a reference to the keyboard object
         auto& keyboard = getApp()->getKeyboard();
+
+        if(keyboard.justPressed(GLFW_KEY_F3)) {
+            bool currentState = physicsSystem.isDebugDrawEnabled();
+            physicsSystem.setDebugDrawEnabled(!currentState);
+            std::cout << "Physics Debug Draw: " << (!currentState ? "ON" : "OFF") << std::endl;
+        }
+
+        world.deleteMarkedEntities();
 
         if(keyboard.justPressed(GLFW_KEY_ESCAPE)){
             // If the escape  key is pressed in this frame, go to the play state

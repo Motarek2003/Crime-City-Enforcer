@@ -5,6 +5,8 @@
 #include "../components/mesh-renderer.hpp"
 #include "../components/animator.hpp"
 #include "../asset-loader.hpp"
+#include "../systems/physics-system.hpp"
+#include "jolt-debug-renderer.hpp"
 
 #include <glad/gl.h>
 #include <vector>
@@ -49,7 +51,7 @@ namespace our
         // Clean up the renderer
         void destroy();
         // This function should be called every frame to draw the given world
-        void render(World* world);
+        void render(World* world, PhysicsSystem* physicsSystem = nullptr);
 
 
     };

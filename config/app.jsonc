@@ -260,7 +260,7 @@
         "name": "deadpool",
         "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, -1, 10],
+        "position": [0, 20, 8],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -297,6 +297,17 @@
             "type": "Character"
           },
           {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
             "type": "Inventory",
             "slots": [
               ["player_katana", "player_katana_2"],
@@ -558,6 +569,17 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "grass"
+          },
+          {
+            "type": "Collider",
+            "shape": "Box",
+            "size": [1, 1, 1],
+            "offset": [0, 0, -1],
+            "isTrigger": false
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
           }
         ]
       },
@@ -570,6 +592,16 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "glass"
+          },
+          {
+            "type": "Collider",
+            "shape": "Box",
+            "size": [1, 1, 0.1],
+            "isTrigger": true
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
           }
         ]
       },
@@ -582,6 +614,16 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "glass"
+          },
+          {
+            "type": "Collider",
+            "shape": "Box",
+            "size": [1, 1, 0.1],
+            "isTrigger": false
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
           }
         ]
       },
@@ -594,6 +636,16 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "glass"
+          },
+          {
+            "type": "Collider",
+            "shape": "Box",
+            "size": [1, 1, 0.1],
+            "isTrigger": false
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
           }
         ]
       },
@@ -606,6 +658,16 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "glass"
+          },
+          {
+            "type": "Collider",
+            "shape": "Box",
+            "size": [1, 1, 0.1],
+            "isTrigger": false
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
           }
         ]
       },
@@ -618,6 +680,16 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "glass"
+          },
+          {
+            "type": "Collider",
+            "shape": "Box",
+            "size": [1, 1, 0.1],
+            "isTrigger": false
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
           }
         ]
       },

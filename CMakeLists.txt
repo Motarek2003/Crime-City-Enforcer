@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 4.0.0)   # Selects the minimum version of CMake required to run this file
 project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and version
 
+include(FetchContent)
+
 # Assimp library for FBX support - using local installation in vendor folder
 set(ASSIMP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/assimp/include")
 set(ASSIMP_LIBRARY "${CMAKE_SOURCE_DIR}/vendor/assimp/lib/x64/assimp-vc143-mt.lib")
@@ -38,6 +40,18 @@ set(IMGUI_SOURCES
 
 # Combine all vendor source files together into a single variable
 set(VENDOR_SOURCES ${GLAD_SOURCE} ${IMGUI_SOURCES})
+
+
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF CACHE BOOL "Use static MSVC runtime" FORCE)
+
+FetchContent_Declare(
+  jolt
+  GIT_REPOSITORY https://github.com/jrouwe/JoltPhysics.git
+  GIT_TAG        v5.4.0      
+  SOURCE_SUBDIR  Build         
+)
+
+FetchContent_MakeAvailable(jolt)
 
 # A variable with all our source files that are common between executable targets (examples)
 set(COMMON_SOURCES
@@ -93,6 +107,10 @@ set(COMMON_SOURCES
         source/common/components/animator.cpp
         source/common/components/bone-attachment.hpp
         source/common/components/component-deserializer.hpp
+        source/common/components/collider.cpp
+        source/common/components/rigidbody.cpp
+        source/common/components/character.hpp
+        source/common/components/character.cpp
 
         source/common/animation/bone.hpp
         source/common/animation/animation.hpp
@@ -102,6 +120,14 @@ set(COMMON_SOURCES
         source/common/systems/forward-renderer.cpp
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
+        source/common/systems/physics-system.hpp
+        source/common/systems/physics-system.cpp
+        source/common/systems/character-controller.hpp
+        source/common/systems/jolt-debug-renderer.hpp
+        source/common/systems/jolt-debug-renderer.cpp
+        source/common/systems/contact-listener.hpp
+        source/common/systems/object-spawner.hpp
+        source/common/systems/lifetime-system.hpp
         source/common/systems/animation-system.hpp
         source/common/systems/bone-attachment-system.hpp
 )
@@ -139,6 +165,7 @@ set(STATES_SOURCES
 # Each target compiles one example source file and the common & vendor source files
 # Then we link GLFW with each target
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
+target_link_libraries(GAME_APPLICATION PRIVATE glfw Jolt::Jolt)
 target_link_libraries(GAME_APPLICATION glfw ${ASSIMP_LIBRARY})
 target_include_directories(GAME_APPLICATION PRIVATE ${ASSIMP_INCLUDE_DIR})
 
