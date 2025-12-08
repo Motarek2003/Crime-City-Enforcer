@@ -2,6 +2,7 @@
 #include "../mesh/mesh-utils.hpp"
 #include "../texture/texture-utils.hpp"
 #include "../components/light.hpp"
+#include <iostream>
 
 namespace our {
 
@@ -117,7 +118,7 @@ namespace our {
         }
     }
 
-    void ForwardRenderer::render(World* world){
+    void ForwardRenderer::render(World* world, PhysicsSystem* physicsSystem){
         // First of all, we search for a camera and for all the mesh renderers
         CameraComponent* camera = nullptr;
         opaqueCommands.clear();
@@ -296,6 +297,23 @@ namespace our {
             }
 
             command.mesh->draw();
+        }
+
+        if(physicsSystem && physicsSystem->isDebugDrawEnabled()) {
+            auto* debugRenderer = physicsSystem->getDebugRenderer();
+            
+            if(debugRenderer && debugRenderer->IsInitialized()) {
+                debugRenderer->Clear();
+                debugRenderer->SetViewProjection(VP);
+
+                JPH::BodyManager::DrawSettings settings;
+                settings.mDrawShape = true;
+                settings.mDrawShapeWireframe = true; // Use DrawLine
+
+                physicsSystem->getPhysicsSystem()->DrawBodies(settings, debugRenderer);
+                
+                debugRenderer->Render();
+            }
         }
 
         // If there is a postprocess material, apply postprocessing

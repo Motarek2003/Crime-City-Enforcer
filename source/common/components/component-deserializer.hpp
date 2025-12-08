@@ -7,6 +7,8 @@
 #include "movement.hpp"
 #include "character.hpp"
 #include "light.hpp"
+#include "collider.hpp"
+#include "rigidbody.hpp"
 
 namespace our {
 
@@ -28,6 +30,10 @@ namespace our {
             component = entity->addComponent<CharacterComponent>();
         } else if(type == LightComponent::getID()){
             component = entity->addComponent<LightComponent>();
+        } else if(type == ColliderComponent::getID()){
+            component = entity->addComponent<ColliderComponent>();
+        } else if(type == RigidBodyComponent::getID()){
+            component = entity->addComponent<RigidBodyComponent>();
         }
         if(component) component->deserialize(data);
     }

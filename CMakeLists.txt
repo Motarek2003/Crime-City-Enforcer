@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 4.0.0)   # Selects the minimum version of CMake required to run this file
 project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and version
 
+include(FetchContent)
+
 # Linux compatibility
 if(UNIX AND NOT APPLE)
         find_package(OpenGL REQUIRED)
@@ -34,6 +36,18 @@ set(IMGUI_SOURCES
 
 # Combine all vendor source files together into a single variable
 set(VENDOR_SOURCES ${GLAD_SOURCE} ${IMGUI_SOURCES})
+
+
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF CACHE BOOL "Use static MSVC runtime" FORCE)
+
+FetchContent_Declare(
+  jolt
+  GIT_REPOSITORY https://github.com/jrouwe/JoltPhysics.git
+  GIT_TAG        v5.4.0      
+  SOURCE_SUBDIR  Build         
+)
+
+FetchContent_MakeAvailable(jolt)
 
 # A variable with all our source files that are common between executable targets (examples)
 set(COMMON_SOURCES
@@ -86,11 +100,23 @@ set(COMMON_SOURCES
         source/common/components/movement.hpp
         source/common/components/movement.cpp
         source/common/components/component-deserializer.hpp
+        source/common/components/collider.cpp
+        source/common/components/rigidbody.cpp
+        source/common/components/character.hpp
+        source/common/components/character.cpp
 
         source/common/systems/forward-renderer.hpp
         source/common/systems/forward-renderer.cpp
         source/common/systems/free-camera-controller.hpp
         source/common/systems/movement.hpp
+        source/common/systems/physics-system.hpp
+        source/common/systems/physics-system.cpp
+        source/common/systems/character-controller.hpp
+        source/common/systems/jolt-debug-renderer.hpp
+        source/common/systems/jolt-debug-renderer.cpp
+        source/common/systems/contact-listener.hpp
+        source/common/systems/object-spawner.hpp
+        source/common/systems/lifetime-system.hpp
 )
 
 # Define the directories in which to search for the included headers
@@ -126,7 +152,7 @@ set(STATES_SOURCES
 # Each target compiles one example source file and the common & vendor source files
 # Then we link GLFW with each target
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION glfw)
+target_link_libraries(GAME_APPLICATION PRIVATE glfw Jolt::Jolt)
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL)

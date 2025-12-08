@@ -1,0 +1,300 @@
+#include "physics-system.hpp"
+#include "../components/collider.hpp"
+#include "../components/rigidbody.hpp"
+#include "../ecs/transform.hpp"
+#include "jolt-debug-renderer.hpp"
+#include <glm/gtc/quaternion.hpp>
+
+// Jolt Headers
+#include <Jolt/RegisterTypes.h>
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+
+#include <iostream>
+
+namespace our {
+    // Class that determines if an object layer can collide with a broadphase layer
+    class PhysicsSystem::ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
+    public:
+        virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
+            switch (inLayer1) {
+                case Layers::NON_MOVING: return inLayer2 == JPH::BroadPhaseLayer(Layers::MOVING);
+                case Layers::MOVING: return true; // Moving collides with everything
+                default: return false;
+            }
+        }
+    };
+
+    // Class that determines if two object layers can collide
+    class PhysicsSystem::ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
+    public:
+        virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
+            switch (inObject1) {
+                case Layers::NON_MOVING: return inObject2 == Layers::MOVING; // Static only collides with Moving
+                case Layers::MOVING: return true; // Moving collides with everything
+                default: return false;
+            }
+        }
+    };
+
+    // Class that maps object layers to broadphase layers
+    class PhysicsSystem::BPLayerInterfaceImpl : public JPH::BroadPhaseLayerInterface {
+        JPH::BroadPhaseLayer mObjectToBroadPhase[Layers::NUM_LAYERS];
+    public:
+        BPLayerInterfaceImpl() {
+            mObjectToBroadPhase[Layers::NON_MOVING] = JPH::BroadPhaseLayer(Layers::NON_MOVING);
+            mObjectToBroadPhase[Layers::MOVING] = JPH::BroadPhaseLayer(Layers::MOVING);
+        }
+        virtual JPH::uint GetNumBroadPhaseLayers() const override { return Layers::NUM_LAYERS; }
+        virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
+            return mObjectToBroadPhase[inLayer];
+        }
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
+        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override { return "Layer"; }
+#endif
+    };
+
+    // CONTACT LISTENER (For collision/trigger detection)
+    class PhysicsSystem::ContactListenerImpl : public JPH::ContactListener {
+    public:
+        virtual JPH::ValidateResult OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, 
+            JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override {
+            // Allow all contacts
+            return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+        }
+
+        virtual void OnContactAdded(const JPH::Body &inBody1, const JPH::Body &inBody2, 
+            const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override {
+            std::cout << "Collision: Body " << inBody1.GetID().GetIndex() << " hit Body " << inBody2.GetID().GetIndex() << std::endl;
+        }
+
+        virtual void OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, 
+            const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override {
+            // Contact is continuing
+        }
+
+        virtual void OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override {
+            // Contact ended
+        }
+    };
+
+    // MAIN SYSTEM IMPLEMENTATION
+    void PhysicsSystem::initialize() {
+        // 1. Initialize Jolt Factory
+        JPH::RegisterDefaultAllocator();
+        JPH::Factory::sInstance = new JPH::Factory();
+        JPH::RegisterTypes();
+
+        // 2. Allocators
+        tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024); // 10 MB
+        jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
+
+        // 3. Create Layer Interfaces
+        bpLayerInterface = new BPLayerInterfaceImpl();
+        objectVsBroadPhaseLayerFilter = new ObjectVsBroadPhaseLayerFilterImpl();
+        objectLayerPairFilter = new ObjectLayerPairFilterImpl();
+
+        // 4. Create System
+        physicsSystem = new JPH::PhysicsSystem();
+        physicsSystem->Init(1024, 0, 1024, 1024, *bpLayerInterface, *objectVsBroadPhaseLayerFilter, *objectLayerPairFilter);
+        
+        bodyInterface = &physicsSystem->GetBodyInterface();
+
+        // 5. Set Contact Listener
+        contactListener = new GameContactListener();
+        physicsSystem->SetContactListener(contactListener);
+
+        // 6. Initialize Debug Renderer
+        debugRenderer = new JoltDebugRenderer();
+        debugRenderer->Initialize();
+    }
+
+    void PhysicsSystem::cleanup() {
+        // Clean up Jolt objects
+        if (debugRenderer) {
+            debugRenderer->Cleanup();
+            delete debugRenderer;
+        }
+        physicsSystem->SetContactListener(nullptr);
+        delete contactListener;
+        delete physicsSystem;
+        delete jobSystem;
+        delete tempAllocator;
+        delete bpLayerInterface;
+        delete objectVsBroadPhaseLayerFilter;
+        delete objectLayerPairFilter;
+        delete JPH::Factory::sInstance;
+        JPH::Factory::sInstance = nullptr;
+    }
+
+    void PhysicsSystem::update(World* world, float deltaTime) {
+        if(!physicsSystem) return;
+
+        //CREATE BODIES
+        for(auto entity : world->getEntities()) {
+            // Needs at least a collider to be a physics object
+            if(!entity->getComponent<ColliderComponent>()) continue;
+
+            auto collider = entity->getComponent<ColliderComponent>();
+            auto transform = &entity->localTransform;
+
+            // Check if body already exists
+            if (!collider->runtimeBodyID.IsInvalid()) continue;
+
+            // Determine if this is static or dynamic
+            RigidBodyComponent* rb = entity->getComponent<RigidBodyComponent>();
+            
+            // --- SHAPE CREATION ---
+            JPH::Ref<JPH::ShapeSettings> shapeSettings;
+            JPH::Vec3 scale = JPH::Vec3(transform->scale.x, transform->scale.y, transform->scale.z);
+            JPH::Vec3 offset = JPH::Vec3(collider->offset.x, collider->offset.y, collider->offset.z) * scale;
+
+
+            if (collider->type == ColliderType::BOX) {
+                JPH::Vec3 scaled = JPH::Vec3(collider->size.x, collider->size.y, collider->size.z) * scale;
+                shapeSettings = new JPH::BoxShapeSettings(scaled);
+            }
+            else if (collider->type == ColliderType::SPHERE) {
+                float radius = collider->size.x * std::max(scale.GetX(), std::max(scale.GetY(), scale.GetZ()));
+                shapeSettings = new JPH::SphereShapeSettings(radius);
+            }
+            else if (collider->type == ColliderType::CAPSULE) {
+                float radius = collider->size.x * std::max(scale.GetX(), scale.GetZ());
+                float height = collider->size.y * scale.GetY(); 
+                shapeSettings = new JPH::CapsuleShapeSettings(height, radius);
+            }
+
+            shapeSettings = new JPH::RotatedTranslatedShapeSettings(
+                    offset, 
+                    JPH::Quat::sIdentity(), // Rotation offset do later (maybe?)
+                    shapeSettings
+                );
+
+            JPH::ShapeSettings::ShapeResult result = shapeSettings->Create();
+
+            if (result.HasError()) {
+                std::cout << "Jolt Shape Error: " << result.GetError() << std::endl;
+                continue;
+            }
+
+            JPH::ShapeRefC shape = result.Get();
+
+            // --- BODY CREATION ---
+            JPH::Vec3 pos = JPH::Vec3(transform->position.x, transform->position.y, transform->position.z);
+            JPH::Quat rot = JPH::Quat::sEulerAngles(JPH::Vec3(transform->rotation.x, transform->rotation.y, transform->rotation.z));
+
+            // Determine motion type
+            JPH::EMotionType motionType = JPH::EMotionType::Static; // Default to static
+            if (rb) {
+                if (rb->type == RigidbodyType::DYNAMIC) motionType = JPH::EMotionType::Dynamic;
+                else if (rb->type == RigidbodyType::KINEMATIC) motionType = JPH::EMotionType::Kinematic;
+                else motionType = JPH::EMotionType::Static;
+            }
+            
+            JPH::ObjectLayer layer = (motionType == JPH::EMotionType::Static) ? Layers::NON_MOVING : Layers::MOVING;
+
+            JPH::BodyCreationSettings bodySettings(shape, pos, rot, motionType, layer);
+            
+            // Apply RigidBody properties if component exists
+            if (rb) {
+                // 1. APPLY GRAVITY
+                bodySettings.mGravityFactor = rb->useGravity ? 1.0f : 0.0f;
+
+                // 2. APPLY MASS (only for Dynamic bodies)
+                if (motionType == JPH::EMotionType::Dynamic) {
+                    bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+                    float finalMass = rb->mass > 0.001f ? rb->mass : 1.0f;
+                    bodySettings.mMassPropertiesOverride.mMass = finalMass;
+
+                    bodySettings.mAllowedDOFs = JPH::EAllowedDOFs::All;
+                    bodySettings.mAllowedDOFs &= ~JPH::EAllowedDOFs::RotationX;
+                    bodySettings.mAllowedDOFs &= ~JPH::EAllowedDOFs::RotationZ;
+                }
+            }
+
+            bodySettings.mUserData = (JPH::uint64)entity;
+            bodySettings.mIsSensor = collider->isTrigger;
+
+            // Create and Add
+            JPH::BodyID bodyID = bodyInterface->CreateAndAddBody(bodySettings, JPH::EActivation::Activate);
+            
+            // Store the ID in both components
+            collider->runtimeBodyID = bodyID;
+            if (rb) {
+                rb->runtimeBodyID = bodyID;
+            }
+
+            // If body is supposed to spwan with movement (bullet)
+            bodyInterface->AddImpulse(rb->runtimeBodyID, rb->impulseVector);
+        }
+
+        // UPDATE SIMULATION
+        physicsSystem->Update(deltaTime, 1, tempAllocator, jobSystem);
+
+
+        // SYNC TRANSFORMS WITH PHYSICS
+        for(auto entity : world->getEntities()) {
+            if(!entity->getComponent<RigidBodyComponent>()) continue;
+            auto rb = entity->getComponent<RigidBodyComponent>();
+
+            if (rb->runtimeBodyID.IsInvalid()) continue;
+            
+            // Only sync Dynamic bodies (Static/Kinematic are controlled by transform)
+            if (bodyInterface->GetMotionType(rb->runtimeBodyID) == JPH::EMotionType::Dynamic) {
+                JPH::RVec3 pos = bodyInterface->GetPosition(rb->runtimeBodyID);
+                // JPH::Quat rot = bodyInterface->GetRotation(rb->runtimeBodyID);
+
+                entity->localTransform.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
+                // entity->localTransform.rotation = ... // TODO: Convert Jolt Quat to glm::quat
+            }
+        }
+    }
+
+    RaycastHit PhysicsSystem::Raycast(glm::vec3 origin, glm::vec3 direction, float maxDistance, const JPH::ObjectLayerFilter& layerFilter) {
+        RaycastHit hitResult;
+        
+        JPH::RVec3 start = JPH::RVec3(origin.x, origin.y, origin.z);
+        JPH::Vec3 dir = JPH::Vec3(direction.x, direction.y, direction.z) * maxDistance;
+        JPH::RRayCast ray(start, dir);
+
+        JPH::RayCastResult result;
+
+        bool hit = physicsSystem->GetNarrowPhaseQuery().CastRay(
+            ray, 
+            result, 
+            JPH::BroadPhaseLayerFilter(), 
+            layerFilter, 
+            JPH::BodyFilter()
+        );
+
+        if (hit) {
+            hitResult.hasHit = true;
+            hitResult.distance = result.mFraction * maxDistance;
+            
+            JPH::RVec3 hitPos = ray.GetPointOnRay(result.mFraction);
+            hitResult.position = glm::vec3(hitPos.GetX(), hitPos.GetY(), hitPos.GetZ());
+
+            // 5. Lock so it doesn't get deleted while reading
+            JPH::BodyLockRead lock(physicsSystem->GetBodyLockInterface(), result.mBodyID);
+            if (lock.Succeeded()) {
+                const JPH::Body& body = lock.GetBody();
+                
+                // Retrieve Entity Pointer
+                hitResult.entity = reinterpret_cast<Entity*>(body.GetUserData());
+
+                // 6. Get the Normal (Optional but useful)
+                // This is slightly expensive, so only do it if you need it.
+                // JPH::Vec3 normal = body.GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                // hitResult.normal = glm::vec3(normal.GetX(), normal.GetY(), normal.GetZ());
+            }
+        }
+
+        return hitResult;
+    }
+}
