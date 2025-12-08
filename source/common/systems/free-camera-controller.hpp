@@ -55,8 +55,8 @@ namespace our
             if(app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1) && !mouse_locked){
                 app->getMouse().lockMouse(app->getWindow());
                 mouse_locked = true;
-            // If the left mouse button is released, we unlock and unhide the mouse.
-            } else if(!app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1) && mouse_locked) {
+            // If the ESCAPE key is pressed, we unlock and unhide the mouse.
+            } else if(app->getKeyboard().justPressed(GLFW_KEY_Y) && mouse_locked) {
                 app->getMouse().unlockMouse(app->getWindow());
                 mouse_locked = false;
             }
@@ -65,9 +65,9 @@ namespace our
             glm::vec3& position = entity->localTransform.position;
             glm::vec3& rotation = entity->localTransform.rotation;
 
-            // If the left mouse button is pressed, we get the change in the mouse location
+            // If the mouse is locked, we get the change in the mouse location
             // and use it to update the camera rotation
-            if(app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1)){
+            if(mouse_locked){
                 glm::vec2 delta = app->getMouse().getMouseDelta();
                 rotation.x -= delta.y * controller->rotationSensitivity; // The y-axis controls the pitch
                 rotation.y -= delta.x * controller->rotationSensitivity; // The x-axis controls the yaw
@@ -91,10 +91,14 @@ namespace our
             position.z = (distance * glm::cos(rotation.y) * glm::cos(rotation.x)) + characterEntity->localTransform.position.z;
             position.y = (distance * glm::sin(-rotation.x)) + characterEntity->localTransform.position.y + 2;
 
-            // We update the camera fov based on the mouse wheel scrolling amount
-            float fov = camera->fovY + app->getMouse().getScrollOffset().y * controller->fovSensitivity;
-            fov = glm::clamp(fov, glm::pi<float>() * 0.01f, glm::pi<float>() * 0.99f); // We keep the fov in the range 0.01*PI to 0.99*PI
-            camera->fovY = fov;
+            // Aiming Logic
+            if(app->getMouse().isPressed(GLFW_MOUSE_BUTTON_2)){
+                // Smoothly interpolate to aim FOV
+                camera->fovY = glm::mix(camera->fovY, controller->aimFov, deltaTime * 10.0f);
+            } else {
+                // Smoothly interpolate back to base FOV
+                camera->fovY = glm::mix(camera->fovY, controller->baseFov, deltaTime * 10.0f);
+            }
         }
 
         // When the state exits, it should call this function to ensure the mouse is unlocked

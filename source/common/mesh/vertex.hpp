@@ -5,6 +5,9 @@
 
 namespace our {
 
+    // Maximum number of bones that can influence a single vertex
+    constexpr int MAX_BONE_INFLUENCE = 4;
+
     // Since we may want to store colors in bytes instead of floats for efficiency,
     // we are creating our own 32-bit R8G8B8A8 Color data type with the default GLM precision
     typedef glm::vec<4, glm::uint8, glm::defaultp> Color;
@@ -14,13 +17,17 @@ namespace our {
         Color color;            // The vertex color
         glm::vec2 tex_coord;    // The texture coordinates (the vertex position in the texture space)
         glm::vec3 normal;       // The surface normal at the vertex (This will be used for lighting in the final phase)
+        glm::ivec4 boneIDs = glm::ivec4(-1);    // Bone indices that affect this vertex
+        glm::vec4 weights = glm::vec4(0.0f);     // Weights for each bone
 
         // We plan to use this as a key for a map so we need to define the equality operator
         bool operator==(const Vertex& other) const {
             return position == other.position &&
                    color == other.color &&
                    tex_coord == other.tex_coord &&
-                   normal == other.normal;
+                   normal == other.normal &&
+                   boneIDs == other.boneIDs &&
+                   weights == other.weights;
         }
     };
 
@@ -38,6 +45,8 @@ namespace std {
             combined = hash_combine(combined, hash<our::Color>()(vertex.color));
             combined = hash_combine(combined, hash<glm::vec2>()(vertex.tex_coord));
             combined = hash_combine(combined, hash<glm::vec3>()(vertex.normal));
+            combined = hash_combine(combined, hash<glm::ivec4>()(vertex.boneIDs));
+            combined = hash_combine(combined, hash<glm::vec4>()(vertex.weights));
             return combined;
         }
     };
