@@ -187,7 +187,12 @@ namespace our {
 
             // --- BODY CREATION ---
             JPH::Vec3 pos = JPH::Vec3(transform->position.x, transform->position.y, transform->position.z);
-            JPH::Quat rot = JPH::Quat::sEulerAngles(JPH::Vec3(transform->rotation.x, transform->rotation.y, transform->rotation.z));
+            // Convert rotation from degrees to radians for Jolt
+            JPH::Quat rot = JPH::Quat::sEulerAngles(JPH::Vec3(
+                glm::radians(transform->rotation.x), 
+                glm::radians(transform->rotation.y), 
+                glm::radians(transform->rotation.z)
+            ));
 
             // Determine motion type
             JPH::EMotionType motionType = JPH::EMotionType::Static; // Default to static

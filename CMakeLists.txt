@@ -165,8 +165,8 @@ set(STATES_SOURCES
 # Each target compiles one example source file and the common & vendor source files
 # Then we link GLFW with each target
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
-target_link_libraries(GAME_APPLICATION PRIVATE glfw Jolt::Jolt)
-target_link_libraries(GAME_APPLICATION glfw ${ASSIMP_LIBRARY})
+target_link_libraries(GAME_APPLICATION PUBLIC glfw ${ASSIMP_LIBRARY})
+target_link_libraries(GAME_APPLICATION PRIVATE Jolt::Jolt)
 target_include_directories(GAME_APPLICATION PRIVATE ${ASSIMP_INCLUDE_DIR})
 
 if(UNIX AND NOT APPLE)

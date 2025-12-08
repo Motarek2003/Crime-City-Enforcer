@@ -153,7 +153,7 @@ namespace our
                 bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
             }
 
-            if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_RIGHT)) {
+            if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1)) {
 
                 //std::cout << "Spawning Object!" << std::endl;
 
@@ -304,6 +304,8 @@ namespace our
                         if (animator->hasAnimation("KatanaIdle") && animator->getCurrentAnimationName() != "KatanaIdle") {
                             animator->setAnimation("KatanaIdle");
                             animator->play();
+                            std::cout << "Character Position: " << entity->localTransform.position.y;
+                            std::cout << std::endl;
                         }
                     } else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
                         if (animator->hasAnimation("RifleIdle") && animator->getCurrentAnimationName() != "RifleIdle") {
@@ -316,7 +318,6 @@ namespace our
             wasWalking = isWalking;
         }
 
-
         static void onCollision(Entity* self, Entity* other) {
             // You can access the CharacterComponent like this:
             CharacterComponent* character = self->getComponent<CharacterComponent>();
@@ -324,7 +325,6 @@ namespace our
             std::cout << "Character Health: " << character->getHealth() << std::endl; 
         }
             
-
         // When the state exits, it should call this function to ensure the mouse is unlocked
         void exit(){}
 
