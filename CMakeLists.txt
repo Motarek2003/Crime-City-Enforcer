@@ -3,10 +3,6 @@ project(GFX-LAB VERSION 0.1.0)          # Here we select the project name and ve
 
 include(FetchContent)
 
-# Assimp library for FBX support - using local installation in vendor folder
-set(ASSIMP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/assimp/include")
-set(ASSIMP_LIBRARY "${CMAKE_SOURCE_DIR}/vendor/assimp/lib/x64/assimp-vc143-mt.lib")
-
 # Linux compatibility
 if(UNIX AND NOT APPLE)
         find_package(OpenGL REQUIRED)
@@ -103,18 +99,11 @@ set(COMMON_SOURCES
         source/common/components/free-camera-controller.cpp
         source/common/components/movement.hpp
         source/common/components/movement.cpp
-        source/common/components/animator.hpp
-        source/common/components/animator.cpp
-        source/common/components/bone-attachment.hpp
         source/common/components/component-deserializer.hpp
         source/common/components/collider.cpp
         source/common/components/rigidbody.cpp
         source/common/components/character.hpp
         source/common/components/character.cpp
-
-        source/common/animation/bone.hpp
-        source/common/animation/animation.hpp
-        source/common/animation/animator.hpp
 
         source/common/systems/forward-renderer.hpp
         source/common/systems/forward-renderer.cpp
@@ -128,8 +117,6 @@ set(COMMON_SOURCES
         source/common/systems/contact-listener.hpp
         source/common/systems/object-spawner.hpp
         source/common/systems/lifetime-system.hpp
-        source/common/systems/animation-system.hpp
-        source/common/systems/bone-attachment-system.hpp
 )
 
 # Define the directories in which to search for the included headers
@@ -166,8 +153,6 @@ set(STATES_SOURCES
 # Then we link GLFW with each target
 add_executable(GAME_APPLICATION source/main.cpp ${STATES_SOURCES} ${COMMON_SOURCES} ${VENDOR_SOURCES})
 target_link_libraries(GAME_APPLICATION PRIVATE glfw Jolt::Jolt)
-target_link_libraries(GAME_APPLICATION glfw ${ASSIMP_LIBRARY})
-target_include_directories(GAME_APPLICATION PRIVATE ${ASSIMP_INCLUDE_DIR})
 
 if(UNIX AND NOT APPLE)
         target_link_libraries(GAME_APPLICATION OpenGL::GL)
