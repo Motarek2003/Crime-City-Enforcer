@@ -547,22 +547,6 @@
       //   ]
       // },
       {
-        "scale": [0.01, 0.01, 0.01],
-        "rotation": [0, 0, 0],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "character",
-            "material": "character"
-          },
-          {
-            "type": "Movement",
-            "linearVelocity": [0, 0, 0],
-            "angularVelocity": [0, 0, 0]
-          }
-        ]
-      },
-      {
         "position": [0, -1, 0],
         "rotation": [-90, 0, 0],
         "scale": [10, 10, 1],
@@ -571,20 +555,12 @@
             "type": "Mesh Renderer",
             "mesh": "plane",
             "material": "grass"
-          }
-        ]
-      },
-      {
-        "name": "ground_collider",
-        "position": [0, -1, 0],
-        "rotation": [0, 0, 0],
-        "scale": [1, 1, 1],
-        "components": [
+          },
           {
             "type": "Collider",
             "shape": "Box",
-            "size": [10, 0.5, 10],
-            "offset": [0, -0.5, 0],
+            "size": [1, 1, 1],
+            "offset": [0, 0, -1],
             "isTrigger": false
           },
           {

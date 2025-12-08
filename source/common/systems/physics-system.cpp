@@ -142,7 +142,6 @@ namespace our {
             if(!entity->getComponent<ColliderComponent>()) continue;
 
             auto collider = entity->getComponent<ColliderComponent>();
-            auto transform = &entity->localTransform;
 
             // Check if body already exists
             if (!collider->runtimeBodyID.IsInvalid()) continue;
@@ -150,9 +149,29 @@ namespace our {
             // Determine if this is static or dynamic
             RigidBodyComponent* rb = entity->getComponent<RigidBodyComponent>();
             
+            // --- GET WORLD TRANSFORM ---
+            // Use world transform to properly inherit parent's position, rotation, and scale
+            glm::mat4 worldMatrix = entity->getLocalToWorldMatrix();
+            
+            // Extract world position
+            glm::vec3 worldPosition = glm::vec3(worldMatrix[3]);
+            
+            // Extract world scale
+            glm::vec3 worldScale;
+            worldScale.x = glm::length(glm::vec3(worldMatrix[0]));
+            worldScale.y = glm::length(glm::vec3(worldMatrix[1]));
+            worldScale.z = glm::length(glm::vec3(worldMatrix[2]));
+            
+            // Extract world rotation matrix (remove scale)
+            glm::mat3 rotationMatrix;
+            rotationMatrix[0] = glm::vec3(worldMatrix[0]) / worldScale.x;
+            rotationMatrix[1] = glm::vec3(worldMatrix[1]) / worldScale.y;
+            rotationMatrix[2] = glm::vec3(worldMatrix[2]) / worldScale.z;
+            glm::quat worldRotation = glm::quat_cast(rotationMatrix);
+
             // --- SHAPE CREATION ---
             JPH::Ref<JPH::ShapeSettings> shapeSettings;
-            JPH::Vec3 scale = JPH::Vec3(transform->scale.x, transform->scale.y, transform->scale.z);
+            JPH::Vec3 scale = JPH::Vec3(worldScale.x, worldScale.y, worldScale.z);
             JPH::Vec3 offset = JPH::Vec3(collider->offset.x, collider->offset.y, collider->offset.z) * scale;
 
 
@@ -186,13 +205,9 @@ namespace our {
             JPH::ShapeRefC shape = result.Get();
 
             // --- BODY CREATION ---
-            JPH::Vec3 pos = JPH::Vec3(transform->position.x, transform->position.y, transform->position.z);
-            // Convert rotation from degrees to radians for Jolt
-            JPH::Quat rot = JPH::Quat::sEulerAngles(JPH::Vec3(
-                glm::radians(transform->rotation.x), 
-                glm::radians(transform->rotation.y), 
-                glm::radians(transform->rotation.z)
-            ));
+            // Use world position and rotation (already extracted above)
+            JPH::Vec3 pos = JPH::Vec3(worldPosition.x, worldPosition.y, worldPosition.z);
+            JPH::Quat rot = JPH::Quat(worldRotation.x, worldRotation.y, worldRotation.z, worldRotation.w);
 
             // Determine motion type
             JPH::EMotionType motionType = JPH::EMotionType::Static; // Default to static
