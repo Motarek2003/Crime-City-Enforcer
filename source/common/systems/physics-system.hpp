@@ -77,6 +77,9 @@ namespace our {
         ObjectVsBroadPhaseLayerFilterImpl* objectVsBroadPhaseLayerFilter = nullptr;
         ObjectLayerPairFilterImpl* objectLayerPairFilter = nullptr;
 
+        // Frame counter to delay physics until everything is loaded
+        int warmupFrames = 0;
+        static constexpr int WARMUP_FRAME_COUNT = 5; // Wait 5 frames before simulating
 
     public:
         void initialize();
