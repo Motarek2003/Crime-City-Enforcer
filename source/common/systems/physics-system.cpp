@@ -142,6 +142,14 @@ namespace our {
     void PhysicsSystem::update(World* world, float deltaTime) {
         if(!physicsSystem) return;
 
+        // Warmup period: create bodies but don't simulate physics yet
+        // This ensures all colliders are loaded before simulation starts
+        bool isWarmingUp = (warmupFrames < WARMUP_FRAME_COUNT);
+        if (isWarmingUp) {
+            warmupFrames++;
+            std::cout << "Physics warmup frame " << warmupFrames << "/" << WARMUP_FRAME_COUNT << std::endl;
+        }
+
         //CREATE BODIES
         for(auto entity : world->getEntities()) {
             // Needs at least a collider to be a physics object
@@ -234,6 +242,7 @@ namespace our {
             // Apply RigidBody properties if component exists
             if (rb) {
                 // 1. APPLY GRAVITY
+                rb->useGravity = false;
                 bodySettings.mGravityFactor = rb->useGravity ? 1.0f : 0.0f;
 
                 // 2. APPLY MASS (only for Dynamic bodies)
@@ -276,7 +285,16 @@ namespace our {
             auto rb = entity->getComponent<RigidBodyComponent>();
 
             if (rb->runtimeBodyID.IsInvalid()) continue;
-            
+            if (isWarmingUp){
+                rb->useGravity = false; // Disable gravity during warmup
+                    if (warmupFrames == WARMUP_FRAME_COUNT) {
+                        rb->useGravity = true; // Re-enable gravity after warmup
+                        JPH::BodyInterface& bodyInterface = physicsSystem->GetBodyInterface();
+                        bodyInterface.SetGravityFactor(rb->runtimeBodyID, 1.0f); 
+                        std::cout << "Physics warmup complete. Enabling gravity." << std::endl;
+                    }
+            }
+
             // Only sync Dynamic bodies (Static/Kinematic are controlled by transform)
             if (bodyInterface->GetMotionType(rb->runtimeBodyID) == JPH::EMotionType::Dynamic) {
                 JPH::RVec3 pos = bodyInterface->GetPosition(rb->runtimeBodyID);

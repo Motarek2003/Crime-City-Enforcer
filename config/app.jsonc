@@ -260,7 +260,7 @@
         "name": "deadpool",
         "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, 50, 0],
+        "position": [0, 20, 8],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -305,7 +305,7 @@
           {
             "type": "Collider",
             "shape": "Capsule",
-            "size": [20, 20, 20],
+            "size": [20, 25, 20],
             "offset": [0, 20, 0],
             "isTrigger": false
           },
