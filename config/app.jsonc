@@ -260,7 +260,7 @@
         "name": "deadpool",
         "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, 20, 8],
+        "position": [0, 2, 8],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -525,7 +525,7 @@
         "name": "enemy",
         "scale": [0.01, 0.01, 0.01],
         "rotation": [0, 180, 0],
-        "position": [0, 50, -2],
+        "position": [0, 2, -4],
         "components": [
           {
             "type": "Mesh Renderer",

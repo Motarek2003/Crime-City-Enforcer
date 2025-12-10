@@ -291,7 +291,8 @@ namespace our {
                         rb->useGravity = true; // Re-enable gravity after warmup
                         JPH::BodyInterface& bodyInterface = physicsSystem->GetBodyInterface();
                         bodyInterface.SetGravityFactor(rb->runtimeBodyID, 1.0f); 
-                        std::cout << "Physics warmup complete. Enabling gravity." << std::endl;
+                        bodyInterface.ActivateBody(rb->runtimeBodyID);
+                        //std::cout << "Physics warmup complete. Enabling gravity." << std::endl;
                     }
             }
 
