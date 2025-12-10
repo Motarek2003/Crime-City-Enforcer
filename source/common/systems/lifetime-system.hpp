@@ -17,7 +17,7 @@ namespace our {
 
                 if (entity->timeRemaining <= 0.0f) {
                     world->markForRemoval(entity);
-                    std::cout << "Entity " << entity->name << " has been marked for removal." << std::endl;
+                    //std::cout << "Entity " << entity->name << " has been marked for removal." << std::endl;
 
                     auto rb = entity->getComponent<RigidBodyComponent>();
                     if (rb && !rb->runtimeBodyID.IsInvalid()) {

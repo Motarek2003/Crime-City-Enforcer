@@ -46,8 +46,9 @@ namespace our
 
             CharacterComponent* character = nullptr;
             for(auto entity : world->getEntities()){
-                 character = entity->getComponent<CharacterComponent>();
-                 if(character) break;
+                if(entity->name != "enemy")
+                character = entity->getComponent<CharacterComponent>();
+                if(character) break;
              }
             Entity* characterEntity = character->getOwner();
 

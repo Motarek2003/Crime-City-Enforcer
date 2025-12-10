@@ -130,6 +130,7 @@ set(COMMON_SOURCES
         source/common/systems/lifetime-system.hpp
         source/common/systems/animation-system.hpp
         source/common/systems/bone-attachment-system.hpp
+        source/common/systems/npc-controller.hpp
 )
 
 # Define the directories in which to search for the included headers

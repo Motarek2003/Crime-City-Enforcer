@@ -12,7 +12,7 @@
     "type": "Collider",
     "shape": "Sphere",
     "size": [1, 1, 1],
-    "offset": [0, 0, -1],
+    "offset": [0, 0, 0],
     "isTrigger": true
     },
     {

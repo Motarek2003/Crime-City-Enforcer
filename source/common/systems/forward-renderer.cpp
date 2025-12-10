@@ -327,7 +327,6 @@ namespace our {
             auto* debugRenderer = physicsSystem->getDebugRenderer();
             
             if(debugRenderer && debugRenderer->IsInitialized()) {
-                debugRenderer->Clear();
                 debugRenderer->SetViewProjection(VP);
 
                 JPH::BodyManager::DrawSettings settings;

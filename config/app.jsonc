@@ -260,7 +260,7 @@
         "name": "deadpool",
         "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, 200, 0],
+        "position": [0, 50, 0],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -521,31 +521,35 @@
           }
         ]
       },
-      // {
-      //   "position": [0, 0, 10],
-      //   "components": [
-      //     {
-      //       "type": "Camera"
-      //     },
-      //     {
-      //       "type": "Free Camera Controller"
-      //     }
-      //   ],
-      //   "children": [
-      //     {
-      //       "scale": [0.01, 0.01, 0.01],
-      //       "rotation": [0, 180, 0],
-      //       "position": [0, 0, -2],
-      //       "components": [
-      //         {
-      //           "type": "Mesh Renderer",
-      //           "mesh": "character",
-      //           "material": "character"
-      //         }
-      //       ]
-      //     }
-      //   ]
-      // },
+      {
+        "name": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 180, 0],
+        "position": [0, 50, -2],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character"
+          }
+        ]
+      },
       {
         "position": [0, -1, 0],
         "rotation": [-90, 0, 0],

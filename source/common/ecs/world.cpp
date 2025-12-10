@@ -11,7 +11,11 @@ namespace our {
             //TODO: (Req 8) Create an entity, make its parent "parent" and call its deserialize with "entityData".
             Entity* entity = this->add();
             if(parent != nullptr)
+            {
                 entity->parent = parent;
+                parent->children.push_back(entity);
+            }
+
             entity->deserialize(entityData);
   
             if(entityData.contains("children")){
@@ -21,5 +25,4 @@ namespace our {
             }
         }
     }
-
 }

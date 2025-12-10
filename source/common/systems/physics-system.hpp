@@ -21,8 +21,10 @@ namespace our {
     // LAYERS
     namespace Layers {
         static constexpr JPH::ObjectLayer NON_MOVING = 0; // Static (Walls)
-        static constexpr JPH::ObjectLayer MOVING = 1;     // Dynamic (Player)
-        static constexpr JPH::ObjectLayer NUM_LAYERS = 2;
+        static constexpr JPH::ObjectLayer PLAYER = 1;     // Dynamic (Player)
+        static constexpr JPH::ObjectLayer PLAYER_ATTACK = 2;
+        static constexpr JPH::ObjectLayer ENEMY = 3;
+        static constexpr JPH::ObjectLayer NUM_LAYERS = 4;
     };
 
 

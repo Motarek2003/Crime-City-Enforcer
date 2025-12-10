@@ -62,9 +62,12 @@ namespace our
             CameraComponent* camera = nullptr;
             for(auto entity : world->getEntities()){
                 if(!character)
-                character = entity->getComponent<CharacterComponent>();
+                {
+                    if(entity->name != "enemy")
+                        character = entity->getComponent<CharacterComponent>();
+                }
                 if(!camera)
-                camera = entity->getComponent<CameraComponent>();
+                    camera = entity->getComponent<CameraComponent>();
                 if(camera && character) break;
              }
             Entity* entity = character->getOwner();
@@ -117,6 +120,9 @@ namespace our
             } 
 
             auto rb = entity->getComponent<RigidBodyComponent>();
+            // Get animator component and switch animations based on state
+            auto animator = entity->getComponent<AnimatorComponent>();
+            auto inventory = entity->getComponent<InventoryComponent>();
 
             JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
 
@@ -145,24 +151,37 @@ namespace our
                 rotation.y = targetAngle; 
             }
             
-            LayerFilter myFilter({Layers::MOVING});
-            RaycastHit hit =  physicsSystem->Raycast(entity->localTransform.position, -1.0f * up, 10, myFilter);
+            //Swapped for an easier jump check, can change back if it doesn't work
+            //LayerFilter myFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
+            //RaycastHit hit =  physicsSystem->Raycast(entity->getLocalToWorldMatrix()[3], -1.0f * up, glm::length(entity->getLocalToWorldMatrix()[1]) * 1000, myFilter);
+            float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
 
-            if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && hit.hasHit) {
+            if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && vert_vel < 1e-5 && vert_vel > -1e-5) {
                 JPH::Vec3 jumpImpulse = JPH::Vec3(0, 5.0f, 0);
                 bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
+            }
+
+            Entity* weapon;
+            for(Entity* child : entity->children)
+            {
+                if(child->name == inventory->slots[inventory->activeSlot][0])
+                {
+                    weapon = child;
+                    break;
+                }
             }
 
             if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1)) {
 
                 //std::cout << "Spawning Object!" << std::endl;
-
-                JPH::Vec3 forwardImpulse = JPH::Vec3(front.x, front.y, front.z) * 1000000.0f;
+                glm::vec3 shot_dir = glm::normalize(glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 1, 0)));
+                glm::vec3 shot_height = glm::normalize(glm::vec3(cameraEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0)));
+                JPH::Vec3 forwardImpulse = JPH::Vec3(shot_dir.x, shot_height.y, shot_dir.z) * 100.0f;
                 ObjectSpawner::spawnObject(
                     world,
-                    entity,
+                    nullptr,
                     object_data,
-                    position + front * 2.0f + glm::vec3(0,1.0f,0),
+                    glm::vec3(weapon->getLocalToWorldMatrix()[3]),
                     glm::vec3(0.0f),
                     glm::vec3(0.1f),
                     forwardImpulse,
@@ -176,9 +195,7 @@ namespace our
                              app->getKeyboard().isPressed(GLFW_KEY_A) ||
                              app->getKeyboard().isPressed(GLFW_KEY_D);
             
-            // Get animator component and switch animations based on state
-            auto animator = entity->getComponent<AnimatorComponent>();
-            auto inventory = entity->getComponent<InventoryComponent>();
+
             bool isAttacking = app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1);
             static bool leftAttackPressed = false;
             
@@ -304,8 +321,6 @@ namespace our
                         if (animator->hasAnimation("KatanaIdle") && animator->getCurrentAnimationName() != "KatanaIdle") {
                             animator->setAnimation("KatanaIdle");
                             animator->play();
-                            std::cout << "Character Position: " << entity->localTransform.position.y;
-                            std::cout << std::endl;
                         }
                     } else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
                         if (animator->hasAnimation("RifleIdle") && animator->getCurrentAnimationName() != "RifleIdle") {

@@ -24,8 +24,10 @@ namespace our {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
             switch (inLayer1) {
-                case Layers::NON_MOVING: return inLayer2 == JPH::BroadPhaseLayer(Layers::MOVING);
-                case Layers::MOVING: return true; // Moving collides with everything
+                case Layers::NON_MOVING: return inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER);
+                case Layers::PLAYER: return inLayer2 != JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK); // Moving collides with everything
+                case Layers::PLAYER_ATTACK: return inLayer2 != JPH::BroadPhaseLayer(Layers::PLAYER);
+                case Layers::ENEMY: return true;
                 default: return false;
             }
         }
@@ -36,8 +38,10 @@ namespace our {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
             switch (inObject1) {
-                case Layers::NON_MOVING: return inObject2 == Layers::MOVING; // Static only collides with Moving
-                case Layers::MOVING: return true; // Moving collides with everything
+                case Layers::NON_MOVING: return inObject2 == Layers::PLAYER;
+                case Layers::PLAYER: return inObject2 != Layers::PLAYER_ATTACK; // Moving collides with everything
+                case Layers::PLAYER_ATTACK: return inObject2 != Layers::PLAYER;
+                case Layers::ENEMY: return true; 
                 default: return false;
             }
         }
@@ -49,7 +53,9 @@ namespace our {
     public:
         BPLayerInterfaceImpl() {
             mObjectToBroadPhase[Layers::NON_MOVING] = JPH::BroadPhaseLayer(Layers::NON_MOVING);
-            mObjectToBroadPhase[Layers::MOVING] = JPH::BroadPhaseLayer(Layers::MOVING);
+            mObjectToBroadPhase[Layers::PLAYER] = JPH::BroadPhaseLayer(Layers::PLAYER);
+            mObjectToBroadPhase[Layers::PLAYER_ATTACK] = JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK);
+            mObjectToBroadPhase[Layers::ENEMY] = JPH::BroadPhaseLayer(Layers::ENEMY);
         }
         virtual JPH::uint GetNumBroadPhaseLayers() const override { return Layers::NUM_LAYERS; }
         virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
@@ -217,7 +223,11 @@ namespace our {
                 else motionType = JPH::EMotionType::Static;
             }
             
-            JPH::ObjectLayer layer = (motionType == JPH::EMotionType::Static) ? Layers::NON_MOVING : Layers::MOVING;
+            JPH::ObjectLayer layer = (motionType == JPH::EMotionType::Static) ? Layers::NON_MOVING : Layers::PLAYER;
+            if(entity->timeRemaining != 0)
+                layer = Layers::PLAYER_ATTACK;
+            else if(entity->name == "enemy")
+                layer = Layers::ENEMY;
 
             JPH::BodyCreationSettings bodySettings(shape, pos, rot, motionType, layer);
             
@@ -241,6 +251,8 @@ namespace our {
             bodySettings.mUserData = (JPH::uint64)entity;
             bodySettings.mIsSensor = collider->isTrigger;
 
+            bodySettings.mLinearVelocity = rb->impulseVector;
+
             // Create and Add
             JPH::BodyID bodyID = bodyInterface->CreateAndAddBody(bodySettings, JPH::EActivation::Activate);
             
@@ -251,7 +263,7 @@ namespace our {
             }
 
             // If body is supposed to spwan with movement (bullet)
-            bodyInterface->AddImpulse(rb->runtimeBodyID, rb->impulseVector);
+            //bodyInterface->AddImpulse(rb->runtimeBodyID, rb->impulseVector);
         }
 
         // UPDATE SIMULATION
@@ -285,6 +297,9 @@ namespace our {
 
         JPH::RayCastResult result;
 
+        //std::cout << "shooting ray" << std::endl;
+
+
         bool hit = physicsSystem->GetNarrowPhaseQuery().CastRay(
             ray, 
             result, 
@@ -293,26 +308,32 @@ namespace our {
             JPH::BodyFilter()
         );
 
-        if (hit) {
-            hitResult.hasHit = true;
-            hitResult.distance = result.mFraction * maxDistance;
-            
-            JPH::RVec3 hitPos = ray.GetPointOnRay(result.mFraction);
-            hitResult.position = glm::vec3(hitPos.GetX(), hitPos.GetY(), hitPos.GetZ());
 
-            // 5. Lock so it doesn't get deleted while reading
-            JPH::BodyLockRead lock(physicsSystem->GetBodyLockInterface(), result.mBodyID);
-            if (lock.Succeeded()) {
-                const JPH::Body& body = lock.GetBody();
+        if(debugRenderer) {
+            if (hit) {
+                hitResult.hasHit = true;
+                hitResult.distance = result.mFraction * maxDistance;
                 
-                // Retrieve Entity Pointer
-                hitResult.entity = reinterpret_cast<Entity*>(body.GetUserData());
+                JPH::RVec3 hitPos = ray.GetPointOnRay(result.mFraction);
+                hitResult.position = glm::vec3(hitPos.GetX(), hitPos.GetY(), hitPos.GetZ());
 
-                // 6. Get the Normal (Optional but useful)
-                // This is slightly expensive, so only do it if you need it.
-                // JPH::Vec3 normal = body.GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
-                // hitResult.normal = glm::vec3(normal.GetX(), normal.GetY(), normal.GetZ());
-            }
+                debugRenderer->DrawLine(start, hitPos, JPH::Color::sGreen);
+
+                // 5. Lock so it doesn't get deleted while reading
+                JPH::BodyLockRead lock(physicsSystem->GetBodyLockInterface(), result.mBodyID);
+                if (lock.Succeeded()) {
+                    const JPH::Body& body = lock.GetBody();
+                    
+                    // Retrieve Entity Pointer
+                    hitResult.entity = reinterpret_cast<Entity*>(body.GetUserData());
+
+                    // 6. Get the Normal (Optional but useful)
+                    // This is slightly expensive, so only do it if you need it.
+                    // JPH::Vec3 normal = body.GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
+                    // hitResult.normal = glm::vec3(normal.GetX(), normal.GetY(), normal.GetZ());
+                }
+            } else
+                debugRenderer->DrawLine(start, start + dir, JPH::Color::sRed);
         }
 
         return hitResult;

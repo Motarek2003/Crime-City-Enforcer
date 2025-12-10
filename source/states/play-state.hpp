@@ -17,6 +17,8 @@
 #include <systems/animation-system.hpp>
 #include <systems/bone-attachment-system.hpp>
 
+#include <systems/npc-controller.hpp>
+
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate: public our::State {
@@ -33,6 +35,8 @@ class Playstate: public our::State {
     our::AnimationSystem animationSystem;
     our::BoneAttachmentSystem boneAttachmentSystem;
 
+    our::NPCControllerSystem npcController;
+
 
     void onInitialize() override {
         // First of all, we get the scene configuration from the app config
@@ -46,6 +50,16 @@ class Playstate: public our::State {
             world.deserialize(config["world"]);
         }
 
+        // 1. Disable everything first
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+
+        // 2. Re-enable only Errors and Warnings (High and Medium severity)
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+
+        // Optional: Enable Low severity (sometimes useful, sometimes spammy)
+        // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, nullptr, GL_TRUE);
+
         physicsSystem.initialize();
         
         physicsSystem.setDebugDrawEnabled(true);
@@ -53,6 +67,7 @@ class Playstate: public our::State {
         cameraController.enter(getApp());
         characterController.enter(getApp());
         inventoryController.enter(getApp());
+        npcController.enter(getApp());
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
@@ -99,6 +114,9 @@ class Playstate: public our::State {
     }
 
     void onDraw(double deltaTime) override {
+        if (physicsSystem.getDebugRenderer()) {
+            physicsSystem.getDebugRenderer()->Clear();
+        }
         // Here, we just run a bunch of systems to control the world logic
         movementSystem.update(&world, (float)deltaTime);
         cameraController.update(&world, (float)deltaTime);
@@ -108,6 +126,7 @@ class Playstate: public our::State {
         inventoryController.update(&world, (float)deltaTime);
         animationSystem.update(&world, (float)deltaTime);
         boneAttachmentSystem.update(&world, (float)deltaTime);
+        npcController.update(&world, (float)deltaTime, &physicsSystem);
         // And finally we use the renderer system to draw the scene
         renderer.render(&world, &physicsSystem);
 
@@ -136,6 +155,8 @@ class Playstate: public our::State {
         characterController.exit();
         // Reset the animation system for next play
         animationSystem.reset();
+
+        npcController.exit();
         // Clear the world
         world.clear();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM
