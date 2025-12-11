@@ -33,8 +33,10 @@ namespace our {
                 float scroll = app->getMouse().getScrollOffset().y;
                 if(scroll > 0) {
                     inventory->activeSlot = (inventory->activeSlot + 1) % 5; // Cycle up
+                    std::cout << "Scrolled Up: New Active Slot = " << inventory->activeSlot << std::endl;
                 } else if(scroll < 0) {
                     inventory->activeSlot = (inventory->activeSlot - 1 + 5) % 5; // Cycle down
+                    std::cout << "Scrolled Down: New Active Slot = " << inventory->activeSlot << std::endl;
                 }
                 
                 // Clamp slot
