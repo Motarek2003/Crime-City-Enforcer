@@ -213,7 +213,6 @@ namespace our
                 // Don't interrupt attack animations until they finish
                 if (isPlayingAttackAnimation && !animator->isAnimationFinished()) {
                     // Let attack animation continue playing
-                    std::cout << "Waiting on animation"<< std::endl; 
                 }
                 else if (isAttacking) {
                     // Switch to attack animation if available
@@ -337,7 +336,24 @@ namespace our
         }
 
         static void onCollision(Entity* self, Entity* other) {
-            // You can access the CharacterComponent like this:
+            // Ignore collision with own bullets (player attacks have timeRemaining set)
+            // Player should only take damage from enemy attacks or enemy contact
+            if (!other) return;
+            
+            // If the other entity is a projectile (has timeRemaining), check if it's an enemy projectile
+            // For now, player bullets are the only projectiles, so ignore all projectiles hitting player
+            if (other->timeRemaining != 0) {
+                // This is a projectile - player's own bullets shouldn't damage them
+                // TODO: Add enemy projectiles with different identification
+                return;
+            }
+            
+            // Only take damage from enemies
+            if (other->name != "enemy") {
+                return;
+            }
+            
+            // Take damage from enemy contact
             CharacterComponent* character = self->getComponent<CharacterComponent>();
             character->setHealth(-10);
             std::cout << "Character Health: " << character->getHealth() << std::endl; 

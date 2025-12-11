@@ -23,13 +23,26 @@ namespace our {
     class PhysicsSystem::ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
-            switch (inLayer1) {
-                case Layers::NON_MOVING: return inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER);
-                case Layers::PLAYER: return inLayer2 != JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK); // Moving collides with everything
-                case Layers::PLAYER_ATTACK: return inLayer2 != JPH::BroadPhaseLayer(Layers::PLAYER);
-                case Layers::ENEMY: return true;
-                default: return false;
+            // NON_MOVING collides with PLAYER and ENEMY (not with attacks or other static)
+            if (inLayer1 == Layers::NON_MOVING) {
+                return inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER) || 
+                       inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY);
             }
+            // PLAYER collides with NON_MOVING and ENEMY (NOT with PLAYER_ATTACK - own bullets)
+            if (inLayer1 == Layers::PLAYER) {
+                return inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING) || 
+                       inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY);
+            }
+            // PLAYER_ATTACK collides only with ENEMY and NON_MOVING (walls)
+            if (inLayer1 == Layers::PLAYER_ATTACK) {
+                return inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY) ||
+                       inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING);
+            }
+            // ENEMY collides with everything except other enemies
+            if (inLayer1 == Layers::ENEMY) {
+                return inLayer2 != JPH::BroadPhaseLayer(Layers::ENEMY);
+            }
+            return false;
         }
     };
 
@@ -37,13 +50,25 @@ namespace our {
     class PhysicsSystem::ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
-            switch (inObject1) {
-                case Layers::NON_MOVING: return inObject2 == Layers::PLAYER;
-                case Layers::PLAYER: return inObject2 != Layers::PLAYER_ATTACK; // Moving collides with everything
-                case Layers::PLAYER_ATTACK: return inObject2 != Layers::PLAYER;
-                case Layers::ENEMY: return true; 
-                default: return false;
+            // NON_MOVING (walls/ground) collides with PLAYER and ENEMY
+            if (inObject1 == Layers::NON_MOVING) {
+                return inObject2 == Layers::PLAYER || inObject2 == Layers::ENEMY;
             }
+            // PLAYER collides with NON_MOVING and ENEMY (NOT with own attacks)
+            if (inObject1 == Layers::PLAYER) {
+                return inObject2 == Layers::NON_MOVING || inObject2 == Layers::ENEMY;
+            }
+            // PLAYER_ATTACK (bullets) collides only with ENEMY and walls
+            if (inObject1 == Layers::PLAYER_ATTACK) {
+                return inObject2 == Layers::ENEMY || inObject2 == Layers::NON_MOVING;
+            }
+            // ENEMY collides with PLAYER, PLAYER_ATTACK, and NON_MOVING (not other enemies)
+            if (inObject1 == Layers::ENEMY) {
+                return inObject2 == Layers::PLAYER || 
+                       inObject2 == Layers::PLAYER_ATTACK || 
+                       inObject2 == Layers::NON_MOVING;
+            }
+            return false;
         }
     };
 

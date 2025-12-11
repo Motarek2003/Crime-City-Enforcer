@@ -62,13 +62,27 @@ namespace our
         }
 
         static void onCollision(Entity* self, Entity* other) {
-            // You can access the CharacterComponent like this:
+            if (!other) return;
+            
+            // Only take damage from player bullets (projectiles have timeRemaining > 0)
+            // timeRemaining > 0 means it's an active projectile, not expired
+            if (other->timeRemaining <= 0) {
+                return; // Not a projectile or already expired
+            }
+            
+            // Take damage from the projectile
             CharacterComponent* character = self->getComponent<CharacterComponent>();
+            if (!character) return;
+            
             character->setHealth(-10);
-            std::cout << "Enemy Health: " << character->getHealth() << std::endl; 
-            if(character->getHealth() == 0)
-                self->timeRemaining = -1;
-
+            std::cout << "Enemy Health: " << character->getHealth() << std::endl;
+            
+            // Mark the bullet as used so it doesn't hit multiple times
+            other->timeRemaining = -1; // This will cause the bullet to be destroyed
+            
+            if (character->getHealth() <= 0) {
+                self->timeRemaining = -1; // Destroy the enemy
+            }
         }
             
         // When the state exits, it should call this function to ensure the mouse is unlocked
