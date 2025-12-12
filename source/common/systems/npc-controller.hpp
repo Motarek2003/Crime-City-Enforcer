@@ -74,7 +74,7 @@ namespace our
 
                         hit = physicsSystem->Raycast(startPos, currentDir, 200, myFilter);
 
-                        if(hit.hasHit) break;
+                        if(hit.hasHit && hit.entity->layer == "player") break;
                     }
 
                     States state = character->getState();
@@ -85,26 +85,30 @@ namespace our
                     // else
                     //     std::cout << "investigation" <<std::endl;
                     
-
+                    float stopping_distance = 0;
                     if(character->getState() == States::PATROL)
                     {
                         glm::vec3 target = character->getTarget();
                         //std::cout << target.x << target.y << target.z << std::endl;
                         //std::cout << character->getIndex() << std::endl;
+                        target.y = startPos.y;
                         float distance = glm::length(glm::abs(startPos - target));
                         //std::cout<< distance <<std::endl;
                         if(distance < 0.9f)
                         {
                             character->updateTarget();
                         }
-
+                        stopping_distance = 0.8f;
                     }
 
                     if(hit.hasHit && hit.entity->layer == "player")
                     {
                         character->setState(States::PURSUIT);
+                        stopping_distance = 5;
                         //std::cout << hit.position.x << hit.position.y << hit.position.z << std::endl;
-                        character->updateTarget(hit.position);
+                        float distance = glm::length(glm::abs(startPos - hit.position));
+                        if(distance > 2)
+                            character->updateTarget(hit.position);
                         float timer = character->getTimer();
                         timer -= deltaTime;
                         //std::cout<<timer<<std::endl;
@@ -128,9 +132,11 @@ namespace our
                             character->setTimer(timer, false);
                     } else if(character->getState() == States::INVESTIGATION){
                         glm::vec3 target = character->getTarget();
+                        target.y = startPos.y;
                         float distance = glm::length(glm::abs(startPos - target));
+                        stopping_distance = 0.8;
                         //std::cout<< distance <<std::endl;
-                        if(distance < 0.5f)
+                        if(distance < 0.9f)
                         {
                             character->updateTarget();
                             character->setState(States::PATROL);
@@ -143,20 +149,27 @@ namespace our
                     glm::vec3 target = character->getTarget();
                     //std::cout << target.x << target.y << target.z << std::endl;
 
+
+                    float distance = glm::length(glm::abs(target - startPos));
+
+
                     auto rb = entity->getComponent<RigidBodyComponent>();
 
                     JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
                     glm::vec3 new_Direction = glm::normalize(glm::vec3(target - startPos));
 
-                    float speed = 2.0f;
-            
-                    JPH::Vec3 newVel(
-                        new_Direction.x * speed, 
-                        currentVel.GetY(), // gravity
-                        new_Direction.z * speed
-                    );
+                    if(distance > stopping_distance) {
+                        float speed = 2.0f;
+                
+                        JPH::Vec3 newVel(
+                            new_Direction.x * speed, 
+                            currentVel.GetY(), // gravity
+                            new_Direction.z * speed
+                        );
 
-                    bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
+                        bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
+                    }
+
 
                     glm::vec3& rotation = entity->localTransform.rotation;
 
