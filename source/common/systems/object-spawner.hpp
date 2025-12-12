@@ -10,7 +10,7 @@ namespace our {
 
     class ObjectSpawner {
         public:
-            static Entity* spawnObject(World* world, Entity* parent , const nlohmann::json& objectData, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale,  JPH::Vec3 impulseVector = JPH::Vec3::sZero(), float timeRemaining = NULL) {
+            static Entity* spawnObject(World* world, Entity* parent , const nlohmann::json& objectData, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale,  JPH::Vec3 impulseVector = JPH::Vec3::sZero(), float timeRemaining = NULL, std::string layer = "non_moving") {
                 Entity* entity = world->add();
                 if(parent != nullptr) {
                     entity->parent = parent;
@@ -19,6 +19,7 @@ namespace our {
                 entity->localTransform.position = position;
                 entity->localTransform.rotation = rotation;
                 entity->localTransform.scale = scale;
+                entity->layer = layer;
                 auto rb = entity->getComponent<our::RigidBodyComponent>();
                 if(rb) {    
                     rb->impulseVector = impulseVector;

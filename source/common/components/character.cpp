@@ -2,6 +2,15 @@
 #include "../systems/character-controller.hpp"
 #include "../systems/npc-controller.hpp"
 
+namespace glm {
+    void from_json(const nlohmann::json& j, glm::vec3& v) {
+        if (j.is_array() && j.size() >= 3) {
+            v.x = j[0];
+            v.y = j[1];
+            v.z = j[2];
+        }
+    }
+}
 
 namespace our
 {
@@ -11,6 +20,13 @@ namespace our
             our::NPCControllerSystem::onCollision(self, other);
         else
             our::CharacterControllerSystem::onCollision(self, other);
+    }
+
+    void CharacterComponent::deserialize(const nlohmann::json& data) {
+        if(data.contains("path")){ 
+            path = data["path"].get<std::vector<glm::vec3>>();
+            target = path[0];
+        }
     }
 } 
 

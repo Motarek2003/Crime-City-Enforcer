@@ -187,7 +187,8 @@ namespace our
                     glm::vec3(0.0f),
                     glm::vec3(0.1f),
                     forwardImpulse,
-                    10.0f
+                    10.0f,
+                    "player_attack"
                 );
             }
             
@@ -336,27 +337,14 @@ namespace our
         }
 
         static void onCollision(Entity* self, Entity* other) {
-            // Ignore collision with own bullets (player attacks have timeRemaining set)
-            // Player should only take damage from enemy attacks or enemy contact
-            if (!other) return;
-            
-            // If the other entity is a projectile (has timeRemaining), check if it's an enemy projectile
-            // For now, player bullets are the only projectiles, so ignore all projectiles hitting player
-            if (other->timeRemaining != 0) {
-                // This is a projectile - player's own bullets shouldn't damage them
-                // TODO: Add enemy projectiles with different identification
-                return;
+            if(other->layer == "enemy_attack") 
+            {
+                CharacterComponent* character = self->getComponent<CharacterComponent>();
+                character->setHealth(-10);
+                std::cout << "Character Health: " << character->getHealth() << std::endl; 
+                if(character->getHealth() == 0)
+                    self->timeRemaining = -1;
             }
-            
-            // Only take damage from enemies
-            if (other->name != "enemy") {
-                return;
-            }
-            
-            // Take damage from enemy contact
-            CharacterComponent* character = self->getComponent<CharacterComponent>();
-            character->setHealth(-10);
-            std::cout << "Character Health: " << character->getHealth() << std::endl; 
         }
             
         // When the state exits, it should call this function to ensure the mouse is unlocked

@@ -278,9 +278,10 @@
       },
       {
         "name": "deadpool",
+        "layer": "player",
         "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, 2, 8],
+        "position": [0, 1, 8],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -543,9 +544,10 @@
       },
       {
         "name": "enemy",
+        "layer": "enemy",
         "scale": [0.01, 0.01, 0.01],
         "rotation": [0, 180, 0],
-        "position": [0, 2, -4],
+        "position": [0, 1, -4],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -566,7 +568,8 @@
             "isTrigger": false
           },
           {
-            "type": "Character"
+            "type": "Character",
+            "path": [[-4,0,-4],[-4,0,4],[4,0,4],[4,0,-4]]
           }
         ]
       },

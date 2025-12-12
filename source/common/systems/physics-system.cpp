@@ -25,28 +25,20 @@
 #include <iostream>
 
 namespace our {
+
+    our::PhysicsSystem* our::PhysicsSystem::instance = nullptr;
+
     // Class that determines if an object layer can collide with a broadphase layer
     class PhysicsSystem::ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
-            // NON_MOVING collides with PLAYER and ENEMY (not with attacks or other static)
-            if (inLayer1 == Layers::NON_MOVING) {
-                return inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER) || 
-                       inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY);
-            }
-            // PLAYER collides with NON_MOVING and ENEMY (NOT with PLAYER_ATTACK - own bullets)
-            if (inLayer1 == Layers::PLAYER) {
-                return inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING) || 
-                       inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY);
-            }
-            // PLAYER_ATTACK collides only with ENEMY and NON_MOVING (walls)
-            if (inLayer1 == Layers::PLAYER_ATTACK) {
-                return inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY) ||
-                       inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING);
-            }
-            // ENEMY collides with everything except other enemies
-            if (inLayer1 == Layers::ENEMY) {
-                return inLayer2 != JPH::BroadPhaseLayer(Layers::ENEMY);
+            switch (inLayer1) {
+                case Layers::NON_MOVING: return inLayer2 != JPH::BroadPhaseLayer(Layers::NON_MOVING);
+                case Layers::PLAYER: return inLayer2 != JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK);
+                case Layers::PLAYER_ATTACK: return (inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY) || inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING));
+                case Layers::ENEMY: return inLayer2 != JPH::BroadPhaseLayer(Layers::ENEMY_ATTACK);
+                case Layers::ENEMY_ATTACK: return (inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER) || inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING));
+                default: return false;
             }
             return false;
         }
@@ -56,23 +48,13 @@ namespace our {
     class PhysicsSystem::ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
-            // NON_MOVING (walls/ground) collides with PLAYER and ENEMY
-            if (inObject1 == Layers::NON_MOVING) {
-                return inObject2 == Layers::PLAYER || inObject2 == Layers::ENEMY;
-            }
-            // PLAYER collides with NON_MOVING and ENEMY (NOT with own attacks)
-            if (inObject1 == Layers::PLAYER) {
-                return inObject2 == Layers::NON_MOVING || inObject2 == Layers::ENEMY;
-            }
-            // PLAYER_ATTACK (bullets) collides only with ENEMY and walls
-            if (inObject1 == Layers::PLAYER_ATTACK) {
-                return inObject2 == Layers::ENEMY || inObject2 == Layers::NON_MOVING;
-            }
-            // ENEMY collides with PLAYER, PLAYER_ATTACK, and NON_MOVING (not other enemies)
-            if (inObject1 == Layers::ENEMY) {
-                return inObject2 == Layers::PLAYER || 
-                       inObject2 == Layers::PLAYER_ATTACK || 
-                       inObject2 == Layers::NON_MOVING;
+            switch (inObject1) {
+                case Layers::NON_MOVING: return inObject2 != Layers::NON_MOVING;
+                case Layers::PLAYER: return inObject2 != Layers::PLAYER_ATTACK; 
+                case Layers::PLAYER_ATTACK: return (inObject2 == Layers::ENEMY || inObject2 == Layers::NON_MOVING);
+                case Layers::ENEMY: return inObject2 != Layers::ENEMY_ATTACK; 
+                case Layers::ENEMY_ATTACK: return (inObject2 == Layers::PLAYER || inObject2 == Layers::NON_MOVING);
+                default: return false;
             }
             return false;
         }
@@ -87,6 +69,7 @@ namespace our {
             mObjectToBroadPhase[Layers::PLAYER] = JPH::BroadPhaseLayer(Layers::PLAYER);
             mObjectToBroadPhase[Layers::PLAYER_ATTACK] = JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK);
             mObjectToBroadPhase[Layers::ENEMY] = JPH::BroadPhaseLayer(Layers::ENEMY);
+            mObjectToBroadPhase[Layers::ENEMY_ATTACK] = JPH::BroadPhaseLayer(Layers::ENEMY_ATTACK);
         }
         virtual JPH::uint GetNumBroadPhaseLayers() const override { return Layers::NUM_LAYERS; }
         virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
@@ -198,6 +181,16 @@ namespace our {
     }
 
     
+
+    PhysicsSystem::PhysicsSystem() {
+        // Register ourselves as the active system
+        instance = this;
+    }
+
+    PhysicsSystem::~PhysicsSystem() {
+        instance = nullptr;
+        cleanup();
+    }
 
     // MAIN SYSTEM IMPLEMENTATION
     void PhysicsSystem::initialize() {
@@ -365,11 +358,25 @@ namespace our {
                 motionType = JPH::EMotionType::Static;
             }
             
-            JPH::ObjectLayer layer = (motionType == JPH::EMotionType::Static) ? Layers::NON_MOVING : Layers::PLAYER;
-            if(entity->timeRemaining != 0)
-                layer = Layers::PLAYER_ATTACK;
-            else if(entity->name == "enemy")
+            // IMPORTANT: Mesh colliders can ONLY be static in Jolt
+            if (collider->type == ColliderType::MESH && motionType != JPH::EMotionType::Static) {
+                std::cout << "Warning: Mesh colliders must be static. Forcing static for entity: " << entity->name << std::endl;
+                motionType = JPH::EMotionType::Static;
+            }
+            
+
+            JPH::ObjectLayer layer;
+
+            if(entity->layer == "player")
+                layer = Layers::PLAYER;
+            else if(entity->layer == "enemy")
                 layer = Layers::ENEMY;
+            else if(entity->layer == "player_attack")
+                layer = Layers::PLAYER_ATTACK;
+            else if(entity->layer == "enemy_attack")
+                layer = Layers::ENEMY_ATTACK;
+            else
+                layer = Layers::NON_MOVING;
 
             JPH::BodyCreationSettings bodySettings(shape, pos, rot, motionType, layer);
             

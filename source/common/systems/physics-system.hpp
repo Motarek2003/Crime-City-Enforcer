@@ -24,7 +24,8 @@ namespace our {
         static constexpr JPH::ObjectLayer PLAYER = 1;     // Dynamic (Player)
         static constexpr JPH::ObjectLayer PLAYER_ATTACK = 2;
         static constexpr JPH::ObjectLayer ENEMY = 3;
-        static constexpr JPH::ObjectLayer NUM_LAYERS = 4;
+        static constexpr JPH::ObjectLayer ENEMY_ATTACK = 4;
+        static constexpr JPH::ObjectLayer NUM_LAYERS = 5;
     };
 
 
@@ -56,6 +57,7 @@ namespace our {
     };
 
     class PhysicsSystem {
+        static PhysicsSystem* instance;
         // Jolt Core Objects
         JPH::PhysicsSystem* physicsSystem = nullptr;
         JPH::TempAllocatorImpl* tempAllocator = nullptr;
@@ -84,9 +86,13 @@ namespace our {
         static constexpr int WARMUP_FRAME_COUNT = 5; // Wait 5 frames before simulating
 
     public:
+        PhysicsSystem();  // Constructor sets instance = this
+        ~PhysicsSystem(); // Destructor sets instance = nullptr
+
         void initialize();
         void cleanup();
         void update(World* world, float deltaTime);
+        static PhysicsSystem* Get() { return instance; }
 
         // Debug Drawing
         void setDebugDrawEnabled(bool enabled) { debugDrawEnabled = enabled; }
