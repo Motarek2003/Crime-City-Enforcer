@@ -185,7 +185,8 @@ namespace our
                     glm::vec3(0.0f),
                     glm::vec3(0.1f),
                     forwardImpulse,
-                    10.0f
+                    10.0f,
+                    "player_attack"
                 );
             }
             
@@ -334,10 +335,14 @@ namespace our
         }
 
         static void onCollision(Entity* self, Entity* other) {
-            // You can access the CharacterComponent like this:
-            CharacterComponent* character = self->getComponent<CharacterComponent>();
-            character->setHealth(-10);
-            std::cout << "Character Health: " << character->getHealth() << std::endl; 
+            if(other->layer == "enemy_attack") 
+            {
+                CharacterComponent* character = self->getComponent<CharacterComponent>();
+                character->setHealth(-10);
+                std::cout << "Character Health: " << character->getHealth() << std::endl; 
+                if(character->getHealth() == 0)
+                    self->timeRemaining = -1;
+            }
         }
             
         // When the state exits, it should call this function to ensure the mouse is unlocked

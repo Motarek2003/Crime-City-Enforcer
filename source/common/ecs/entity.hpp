@@ -19,6 +19,7 @@ namespace our {
         Entity() = default; // The entity constructor is private since only the world is allowed to instantiate an entity
     public:
         std::string name; // The name of the entity. It could be useful to refer to an entity by its name
+        std::string layer;
         Entity* parent;   // The parent of the entity. The transform of the entity is relative to its parent.
                           // If parent is null, the entity is a root entity (has no parent).
         std::list<Entity*> children;
