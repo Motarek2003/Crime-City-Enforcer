@@ -724,7 +724,7 @@
         "name": "city",
         "position": [-5, 0, 0],
         "rotation": [0, 0, 0],
-        "scale": [0.01, 0.01, 0.01],
+        "scale": [0.005, 0.005, 0.005],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -743,7 +743,6 @@
           }
         ]
       },
-
       {
         "position": [-5, 100, -5],
         "rotation": [0, 0, 0],

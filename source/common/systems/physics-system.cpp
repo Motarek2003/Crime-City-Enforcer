@@ -479,11 +479,6 @@ namespace our {
                     
                     // Retrieve Entity Pointer
                     hitResult.entity = reinterpret_cast<Entity*>(body.GetUserData());
-
-                    // 6. Get the Normal (Optional but useful)
-                    // This is slightly expensive, so only do it if you need it.
-                    // JPH::Vec3 normal = body.GetWorldSpaceSurfaceNormal(result.mSubShapeID2, ray.GetPointOnRay(result.mFraction));
-                    // hitResult.normal = glm::vec3(normal.GetX(), normal.GetY(), normal.GetZ());
                 }
             } else
                 debugRenderer->DrawLine(start, start + dir, JPH::Color::sRed);
