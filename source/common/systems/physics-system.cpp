@@ -12,9 +12,15 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+
+// Assimp for mesh loading (for mesh colliders)
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include <iostream>
 
@@ -34,6 +40,7 @@ namespace our {
                 case Layers::ENEMY_ATTACK: return (inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER) || inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING));
                 default: return false;
             }
+            return false;
         }
     };
 
@@ -49,6 +56,7 @@ namespace our {
                 case Layers::ENEMY_ATTACK: return (inObject2 == Layers::PLAYER || inObject2 == Layers::NON_MOVING);
                 default: return false;
             }
+            return false;
         }
     };
 
@@ -95,6 +103,84 @@ namespace our {
             // Contact ended
         }
     };
+
+    // Helper function to create mesh shape from file using Assimp
+    JPH::Ref<JPH::ShapeSettings> PhysicsSystem::createMeshShape(const std::string& meshPath, const JPH::Vec3& scale, const glm::quat& rotation) {
+        Assimp::Importer importer;
+        
+        const aiScene* scene = importer.ReadFile(meshPath,
+            aiProcess_Triangulate |
+            aiProcess_JoinIdenticalVertices |
+            aiProcess_OptimizeMeshes |
+            aiProcess_OptimizeGraph |
+            aiProcess_PreTransformVertices  // Bake FBX node transforms into vertices (matches visual mesh loading)
+        );
+
+        if (!scene || !scene->mMeshes || scene->mNumMeshes == 0) {
+            std::cout << "Failed to load mesh for collider: " << meshPath << std::endl;
+            std::cout << "Assimp error: " << importer.GetErrorString() << std::endl;
+            // Return a unit box as fallback
+            return new JPH::BoxShapeSettings(scale);
+        }
+
+        // Collect all vertices and triangles from all meshes in the scene
+        JPH::VertexList vertices;
+        JPH::IndexedTriangleList triangles;
+        
+        // Create rotation matrix from quaternion for transforming vertices
+        glm::mat3 rotMat = glm::mat3_cast(rotation);
+        
+        uint32_t vertexOffset = 0;
+
+        for (unsigned int m = 0; m < scene->mNumMeshes; m++) {
+            aiMesh* mesh = scene->mMeshes[m];
+
+            // Add vertices (apply rotation THEN scale)
+            for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+                aiVector3D& v = mesh->mVertices[i];
+                
+                // First convert to glm vec3
+                glm::vec3 vertex(v.x, v.y, v.z);
+                
+                // Apply rotation first
+                vertex = rotMat * vertex;
+                
+                // Then apply scale
+                vertices.push_back(JPH::Float3(
+                    vertex.x * scale.GetX(),
+                    vertex.y * scale.GetY(),
+                    vertex.z * scale.GetZ()
+                ));
+            }
+
+            // Add triangles
+            for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+                aiFace& face = mesh->mFaces[i];
+                if (face.mNumIndices == 3) {
+                    triangles.push_back(JPH::IndexedTriangle(
+                        vertexOffset + face.mIndices[0],
+                        vertexOffset + face.mIndices[1],
+                        vertexOffset + face.mIndices[2]
+                    ));
+                }
+            }
+
+            vertexOffset += mesh->mNumVertices;
+        }
+
+        if (vertices.empty() || triangles.empty()) {
+            std::cout << "Mesh has no valid geometry for collider: " << meshPath << std::endl;
+            return new JPH::BoxShapeSettings(scale);
+        }
+
+        std::cout << "Created mesh collider from: " << meshPath << std::endl;
+        std::cout << "  -> Vertices: " << vertices.size() << ", Triangles: " << triangles.size() << std::endl;
+        std::cout << "  -> Rotation applied: (" << rotation.x << ", " << rotation.y << ", " << rotation.z << ", " << rotation.w << ")" << std::endl;
+
+        return new JPH::MeshShapeSettings(vertices, triangles);
+    }
+
+    
 
     PhysicsSystem::PhysicsSystem() {
         // Register ourselves as the active system
@@ -218,12 +304,26 @@ namespace our {
                 float height = collider->size.y * scale.GetY(); 
                 shapeSettings = new JPH::CapsuleShapeSettings(height, radius);
             }
+            else if (collider->type == ColliderType::MESH) {
+                // Load mesh from file for collision
+                if (collider->collisionMeshPath.empty()) {
+                    std::cout << "  -> Mesh collider missing mesh path, using box fallback" << std::endl;
+                    shapeSettings = new JPH::BoxShapeSettings(scale);
+                } else {
+                    std::cout << "  -> Creating mesh collider from: " << collider->collisionMeshPath << std::endl;
+                    // Pass rotation to bake into mesh vertices (mesh colliders are static, so rotation is baked)
+                    shapeSettings = createMeshShape(collider->collisionMeshPath, scale, worldRotation);
+                }
+            }
 
-            shapeSettings = new JPH::RotatedTranslatedShapeSettings(
-                    offset, 
-                    JPH::Quat::sIdentity(), // Rotation offset do later (maybe?)
-                    shapeSettings
-                );
+            // Apply offset (skip for mesh colliders - they have geometry baked in)
+            if (collider->type != ColliderType::MESH) {
+                shapeSettings = new JPH::RotatedTranslatedShapeSettings(
+                        offset, 
+                        JPH::Quat::sIdentity(), // Rotation offset do later (maybe?)
+                        shapeSettings
+                    );
+            }
 
             JPH::ShapeSettings::ShapeResult result = shapeSettings->Create();
 
@@ -237,7 +337,12 @@ namespace our {
             // --- BODY CREATION ---
             // Use world position and rotation (already extracted above)
             JPH::Vec3 pos = JPH::Vec3(worldPosition.x, worldPosition.y, worldPosition.z);
-            JPH::Quat rot = JPH::Quat(worldRotation.x, worldRotation.y, worldRotation.z, worldRotation.w);
+            
+            // For mesh colliders, rotation is already baked into the vertices, so use identity rotation
+            // For other colliders, apply the world rotation to the body
+            JPH::Quat rot = (collider->type == ColliderType::MESH) 
+                ? JPH::Quat::sIdentity() 
+                : JPH::Quat(worldRotation.x, worldRotation.y, worldRotation.z, worldRotation.w);
 
             // Determine motion type
             JPH::EMotionType motionType = JPH::EMotionType::Static; // Default to static
@@ -245,6 +350,18 @@ namespace our {
                 if (rb->type == RigidbodyType::DYNAMIC) motionType = JPH::EMotionType::Dynamic;
                 else if (rb->type == RigidbodyType::KINEMATIC) motionType = JPH::EMotionType::Kinematic;
                 else motionType = JPH::EMotionType::Static;
+            }
+            
+            // IMPORTANT: Mesh colliders can ONLY be static in Jolt
+            if (collider->type == ColliderType::MESH && motionType != JPH::EMotionType::Static) {
+                std::cout << "Warning: Mesh colliders must be static. Forcing static for entity: " << entity->name << std::endl;
+                motionType = JPH::EMotionType::Static;
+            }
+            
+            // IMPORTANT: Mesh colliders can ONLY be static in Jolt
+            if (collider->type == ColliderType::MESH && motionType != JPH::EMotionType::Static) {
+                std::cout << "Warning: Mesh colliders must be static. Forcing static for entity: " << entity->name << std::endl;
+                motionType = JPH::EMotionType::Static;
             }
             
 

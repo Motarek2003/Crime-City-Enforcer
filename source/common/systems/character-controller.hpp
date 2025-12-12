@@ -161,18 +161,20 @@ namespace our
                 bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
             }
 
-            Entity* weapon;
+            Entity* weapon = NULL;
             for(Entity* child : entity->children)
             {
+                if (inventory->slots[inventory->activeSlot].empty()) continue;
                 if(child->name == inventory->slots[inventory->activeSlot][0])
                 {
+                    if(child->name == "") continue;
                     weapon = child;
                     break;
                 }
             }
 
             if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1)) {
-
+                if(!weapon) return;
                 //std::cout << "Spawning Object!" << std::endl;
                 glm::vec3 shot_dir = glm::normalize(glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 1, 0)));
                 glm::vec3 shot_height = glm::normalize(glm::vec3(cameraEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0)));

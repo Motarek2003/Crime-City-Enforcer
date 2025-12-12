@@ -8,13 +8,13 @@ namespace our {
             if(typeStr == "Box") type = ColliderType::BOX;
             else if(typeStr == "Sphere") type = ColliderType::SPHERE;
             else if(typeStr == "Capsule") type = ColliderType::CAPSULE;
+            else if(typeStr == "Mesh") type = ColliderType::MESH;
         }
 
         if(data.contains("size")) {
             size.x = data["size"][0];
             size.y = data["size"].size() > 1 ? data["size"][1] : size.x;
             size.z = data["size"].size() > 2 ? data["size"][2] : size.x;
-            
         }
 
         if(data.contains("offset")) {
@@ -24,6 +24,6 @@ namespace our {
         }
 
         isTrigger = data.value("isTrigger", false);
-        
+        collisionMeshPath = data.value("mesh", collisionMeshPath);
     }
 }
