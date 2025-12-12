@@ -39,7 +39,8 @@
         "gun": "assets/textures/deagle.png",
         "katana": "assets/textures/Kat.png",
         "deadpool": "assets/textures/Baking.png",
-        "Rifle": "assets/textures/Rifle.png"
+        "Rifle": "assets/textures/Rifle.png",
+        "city": "assets/textures/baked4K.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -50,7 +51,8 @@
         "gun": "assets/models/desert_eagle.obj",
         "katana": "assets/models/Katana.obj",
         "deadpool": "assets/models/Deadpool_baked.fbx",
-        "Rifle": "assets/models/Rifle.obj"
+        "Rifle": "assets/models/Rifle.obj",
+        "city": "assets/models/cityBaked.fbx"
       },
       "samplers": {
         "default": {},
@@ -206,6 +208,24 @@
           "specular_color": [1, 1, 1],
           "ambient": [1, 1, 1],
           "albedo": "grass",
+          "sampler": "default"
+        },
+        "city": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "city",
           "sampler": "default"
         },
         "monkey": {
@@ -699,6 +719,31 @@
       //     }
       //   ]
       // },
+
+      {
+        "name": "city",
+        "position": [-5, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": [0.01, 0.01, 0.01],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "city",
+            "material": "city"
+          },
+          {
+            "type": "Collider",
+            "shape": "Mesh",
+            "mesh": "assets/models/cityBaked.fbx",
+            "isTrigger": false
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Static"
+          }
+        ]
+      },
+
       {
         "position": [-5, 100, -5],
         "rotation": [0, 0, 0],

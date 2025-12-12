@@ -12,7 +12,8 @@ namespace our {
     enum class ColliderType {
         BOX,
         SPHERE,
-        CAPSULE
+        CAPSULE,
+        MESH
     };
 
     class ColliderComponent : public Component {
@@ -29,6 +30,12 @@ namespace our {
         
         // Offset from the entity center
         glm::vec3 offset = {0.0f, 0.0f, 0.0f};
+
+        //For mesh colliders - path to the collision mesh
+        std::string collisionMeshPath = "";
+
+        // Whether to use convex hull (faster) or triangle mesh (accurate)
+        bool useConvexHull = false;
 
         bool isTrigger = false;
 

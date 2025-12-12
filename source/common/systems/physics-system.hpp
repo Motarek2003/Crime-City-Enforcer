@@ -98,5 +98,9 @@ namespace our {
         // Helper to access Jolt from Renderer
         JPH::PhysicsSystem* getPhysicsSystem() { return physicsSystem; }
         JPH::BodyInterface* getBodyInterface() { return bodyInterface; }
+
+        // Helper to create mesh shape from file
+        JPH::Ref<JPH::ShapeSettings> createMeshShape(const std::string& meshPath, const JPH::Vec3& scale, const glm::quat& rotation);
+
     };
 }
