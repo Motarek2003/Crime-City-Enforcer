@@ -157,6 +157,7 @@ namespace our
             //float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
 
             if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && hit.hasHit){// && vert_vel < 1e-3 && vert_vel > -1e-3) {
+                std::cout << "Jump!" << std::endl;
                 JPH::Vec3 jumpImpulse = JPH::Vec3(0, 5.0f, 0);
                 bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
             }
@@ -378,7 +379,6 @@ namespace our
             
         // When the state exits, it should call this function to ensure the mouse is unlocked
         void exit(){}
-
     };
 
 }

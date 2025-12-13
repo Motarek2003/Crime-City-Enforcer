@@ -65,7 +65,7 @@ namespace our {
             // Animation is "finished" if we're near the end (within 1 frame worth of time)
             float duration = currentAnimation->getDuration();
             float ticksPerSecond = currentAnimation->getTicksPerSecond();
-            float threshold = ticksPerSecond * 0.016f; // ~1 frame at 60fps
+            float threshold = ticksPerSecond * deltaTime; //0.016f; // ~1 frame at 60fps
             return currentTime >= (duration - threshold);
         }
         

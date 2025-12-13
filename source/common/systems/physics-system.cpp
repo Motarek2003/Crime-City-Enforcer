@@ -194,9 +194,14 @@ namespace our {
 
     // MAIN SYSTEM IMPLEMENTATION
     void PhysicsSystem::initialize() {
-        // 1. Initialize Jolt Factory
+        // Reset warmup frames for fresh start
+        warmupFrames = 0;
+        
+        // 1. Initialize Jolt Factory (only if not already initialized)
         JPH::RegisterDefaultAllocator();
-        JPH::Factory::sInstance = new JPH::Factory();
+        if (JPH::Factory::sInstance == nullptr) {
+            JPH::Factory::sInstance = new JPH::Factory();
+        }
         JPH::RegisterTypes();
 
         // 2. Allocators
@@ -228,6 +233,7 @@ namespace our {
         if (debugRenderer) {
             debugRenderer->Cleanup();
             delete debugRenderer;
+            debugRenderer = nullptr;
         }
         physicsSystem->SetContactListener(nullptr);
         delete contactListener;

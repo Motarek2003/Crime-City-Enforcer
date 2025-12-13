@@ -16,7 +16,7 @@ namespace our
 {
     void CharacterComponent::onCollisionEnter(Entity* other) {
         Entity* self = this->getOwner();
-        if (self->name == "enemy")
+        if (self->name == "enemy" && isAlive)
             our::NPCControllerSystem::onCollision(self, other);
         else
             our::CharacterControllerSystem::onCollision(self, other);
