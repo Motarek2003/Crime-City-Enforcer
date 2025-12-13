@@ -37,6 +37,7 @@ namespace our
         bool wasWalking = false;  // Track previous walking state
         bool isPlayingAttackAnimation = false;  // Track if attack animation is playing
 
+
     public:
         // When a state enters, it should call this function and give it the pointer to the application
         void enter(Application* app){
@@ -54,7 +55,6 @@ namespace our
             wasWalking = false;
             isPlayingAttackAnimation = false;
         }
-
         // This should be called every frame to update all entities containing a CharacterComponent 
         void update(World* world, float deltaTime, our::PhysicsSystem* physicsSystem) {
             JPH::BodyInterface* bodyInterface = physicsSystem->getBodyInterface();
@@ -93,111 +93,112 @@ namespace our
             glm::vec3 new_Direction = glm::vec3(0.0f, 0.0f, 0.0f);
             // We change the character position based on the keys WASD/QE
             // S & W moves the player back and forth
-            if(app->getKeyboard().isPressed(GLFW_KEY_W))
-            {
-                new_Direction += front;
-            } 
-            if(app->getKeyboard().isPressed(GLFW_KEY_S))
-            {
-                new_Direction -= front;
-            } 
-            // Q & E moves the player up and down
-            if(app->getKeyboard().isPressed(GLFW_KEY_Q))
-            {
-                new_Direction += up;
-            } 
-            if(app->getKeyboard().isPressed(GLFW_KEY_E))
-            {
-                new_Direction -= up;
-            } 
-            if(app->getKeyboard().isPressed(GLFW_KEY_D))
-            {
-                new_Direction += right;
-            } 
-            if(app->getKeyboard().isPressed(GLFW_KEY_A))
-            {
-                new_Direction -= right;
-            } 
-
-            auto rb = entity->getComponent<RigidBodyComponent>();
-            // Get animator component and switch animations based on state
-            auto animator = entity->getComponent<AnimatorComponent>();
-            auto inventory = entity->getComponent<InventoryComponent>();
-
-            JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
-
-            float speed = 20.0f;
-
-            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) speed *= 5;
-    
-            JPH::Vec3 newVel(
-                new_Direction.x * speed, 
-                currentVel.GetY(), // gravity
-                new_Direction.z * speed
-            );
-
-            bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
-
-
-            if (app->getMouse().isPressed(GLFW_MOUSE_BUTTON_2)) {
-                rotation.y = cameraEntity->localTransform.rotation.y + glm::pi<float>();
-            }
-            else if(glm::length(new_Direction) > 0) 
-
-            {
-                new_Direction = glm::normalize(new_Direction);
-                float targetAngle = glm::atan(new_Direction.x, new_Direction.z);
-
-                rotation.y = targetAngle; 
-            }
-            
-            //Swapped for an easier jump check, can change back if it doesn't work
-            //LayerFilter myFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
-            //RaycastHit hit =  physicsSystem->Raycast(entity->getLocalToWorldMatrix()[3], -1.0f * up, glm::length(entity->getLocalToWorldMatrix()[1]) * 1000, myFilter);
-            float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
-
-            if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && vert_vel < 1e-5 && vert_vel > -1e-5) {
-                JPH::Vec3 jumpImpulse = JPH::Vec3(0, 5.0f, 0);
-                bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
-            }
-
-            Entity* weapon = NULL;
-            for(Entity* child : entity->children)
-            {
-                if (inventory->slots[inventory->activeSlot].empty()) continue;
-                if(child->name == inventory->slots[inventory->activeSlot][0])
+            if (character->getAlive()){
+                if(app->getKeyboard().isPressed(GLFW_KEY_W))
                 {
-                    if(child->name == "") continue;
-                    weapon = child;
-                    break;
-                }
-            }
+                    new_Direction += front;
+                } 
+                if(app->getKeyboard().isPressed(GLFW_KEY_S))
+                {
+                    new_Direction -= front;
+                } 
+                // Q & E moves the player up and down
+                if(app->getKeyboard().isPressed(GLFW_KEY_Q))
+                {
+                    new_Direction += up;
+                } 
+                if(app->getKeyboard().isPressed(GLFW_KEY_E))
+                {
+                    new_Direction -= up;
+                } 
+                if(app->getKeyboard().isPressed(GLFW_KEY_D))
+                {
+                    new_Direction += right;
+                } 
+                if(app->getKeyboard().isPressed(GLFW_KEY_A))
+                {
+                    new_Direction -= right;
+                } 
 
-            if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1)) {
-                if(!weapon) return;
-                //std::cout << "Spawning Object!" << std::endl;
-                glm::vec3 shot_dir = glm::normalize(glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 1, 0)));
-                glm::vec3 shot_height = glm::normalize(glm::vec3(cameraEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0)));
-                JPH::Vec3 forwardImpulse = JPH::Vec3(shot_dir.x, shot_height.y, shot_dir.z) * 100.0f;
-                ObjectSpawner::spawnObject(
-                    world,
-                    nullptr,
-                    object_data,
-                    glm::vec3(weapon->getLocalToWorldMatrix()[3]),
-                    glm::vec3(0.0f),
-                    glm::vec3(0.1f),
-                    forwardImpulse,
-                    10.0f,
-                    "player_attack"
+                auto rb = entity->getComponent<RigidBodyComponent>();
+                // Get animator component and switch animations based on state
+                auto animator = entity->getComponent<AnimatorComponent>();
+                auto inventory = entity->getComponent<InventoryComponent>();
+
+                JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
+
+                float speed = 20.0f;
+
+                if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) speed *= 5;
+        
+                JPH::Vec3 newVel(
+                    new_Direction.x * speed, 
+                    currentVel.GetY(), // gravity
+                    new_Direction.z * speed
                 );
-            }
-            
-          // Control walking animation based on movement
+
+                bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
+
+
+                if (app->getMouse().isPressed(GLFW_MOUSE_BUTTON_2)) {
+                    rotation.y = cameraEntity->localTransform.rotation.y + glm::pi<float>();
+                }
+                else if(glm::length(new_Direction) > 0) 
+
+                {
+                    new_Direction = glm::normalize(new_Direction);
+                    float targetAngle = glm::atan(new_Direction.x, new_Direction.z);
+
+                    rotation.y = targetAngle; 
+                }
+                
+                //Swapped for an easier jump check, can change back if it doesn't work
+                //LayerFilter myFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
+                //RaycastHit hit =  physicsSystem->Raycast(entity->getLocalToWorldMatrix()[3], -1.0f * up, glm::length(entity->getLocalToWorldMatrix()[1]) * 1000, myFilter);
+                float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
+
+                if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && vert_vel < 1e-5 && vert_vel > -1e-5) {
+                    JPH::Vec3 jumpImpulse = JPH::Vec3(0, 5.0f, 0);
+                    bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
+                }
+
+                Entity* weapon = NULL;
+                for(Entity* child : entity->children)
+                {
+                    if (inventory->slots[inventory->activeSlot].empty()) continue;
+                    if(child->name == inventory->slots[inventory->activeSlot][0])
+                    {
+                        if(child->name == "") continue;
+                        weapon = child;
+                        break;
+                    }
+                }
+
+                if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1)) {
+                    if(!weapon) return;
+                    //std::cout << "Spawning Object!" << std::endl;
+                    glm::vec3 shot_dir = glm::normalize(glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 1, 0)));
+                    glm::vec3 shot_height = glm::normalize(glm::vec3(cameraEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0)));
+                    JPH::Vec3 forwardImpulse = JPH::Vec3(shot_dir.x, shot_height.y, shot_dir.z) * 100.0f;
+                    ObjectSpawner::spawnObject(
+                        world,
+                        nullptr,
+                        object_data,
+                        glm::vec3(weapon->getLocalToWorldMatrix()[3]),
+                        glm::vec3(0.0f),
+                        glm::vec3(0.1f),
+                        forwardImpulse,
+                        10.0f,
+                        "player_attack"
+                    );
+                }
+                          // Control walking animation based on movement
             bool isWalking = app->getKeyboard().isPressed(GLFW_KEY_W) || 
                              app->getKeyboard().isPressed(GLFW_KEY_S) ||
                              app->getKeyboard().isPressed(GLFW_KEY_A) ||
                              app->getKeyboard().isPressed(GLFW_KEY_D);
             
+
 
             bool isAttacking = app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1);
             static bool leftAttackPressed = false;
@@ -333,7 +334,18 @@ namespace our
                     }
                 }
             }
-            wasWalking = isWalking;
+            wasWalking = isWalking;     
+            }
+            else {
+                auto animator = entity->getComponent<AnimatorComponent>();
+                if (animator && animator->enabled) {
+                    if (animator->isAnimationFinished()){
+                        animator->stop();
+                        // draw a wasted screen 
+                        app->changeState("dead");
+                    } 
+                }
+            }
         }
 
         static void onCollision(Entity* self, Entity* other) {
@@ -342,8 +354,16 @@ namespace our
                 CharacterComponent* character = self->getComponent<CharacterComponent>();
                 character->setHealth(-10);
                 std::cout << "Character Health: " << character->getHealth() << std::endl; 
-                if(character->getHealth() == 0)
-                    self->timeRemaining = -1;
+                if(character->getHealth() == 0){
+                    character->setAlive(false);
+                    //self->timeRemaining = -1;
+                    if (auto animator = self->getComponent<AnimatorComponent>()) {
+                        if (animator->hasAnimation("Death")) {
+                            animator->setAnimation("Death");
+                            animator->play();
+                        }
+                    }
+                }
             }
         }
             
