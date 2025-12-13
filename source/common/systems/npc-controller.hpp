@@ -65,7 +65,7 @@ namespace our
                     LayerFilter myFilter({Layers::ENEMY, Layers::ENEMY_ATTACK, Layers::PLAYER_ATTACK});
                     RaycastHit hit;
                     hit.hasHit = false;
-                    for(int i = -9; i <= 9; i++)
+                    for(int i = -8; i <= 8; i++)
                     {
                         float angle = glm::radians(i * 10.0f); 
 

@@ -151,12 +151,11 @@ namespace our
                 rotation.y = targetAngle; 
             }
             
-            //Swapped for an easier jump check, can change back if it doesn't work
-            //LayerFilter myFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
-            //RaycastHit hit =  physicsSystem->Raycast(entity->getLocalToWorldMatrix()[3], -1.0f * up, glm::length(entity->getLocalToWorldMatrix()[1]) * 1000, myFilter);
-            float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
+            LayerFilter myFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
+            RaycastHit hit =  physicsSystem->Raycast(entity->getLocalToWorldMatrix()[3], -1.0f * up, 1 / glm::length(entity->getLocalToWorldMatrix()[1]), myFilter);
+            //float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
 
-            if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && vert_vel < 1e-5 && vert_vel > -1e-5) {
+            if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && hit.hasHit){// && vert_vel < 1e-3 && vert_vel > -1e-3) {
                 JPH::Vec3 jumpImpulse = JPH::Vec3(0, 5.0f, 0);
                 bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
             }

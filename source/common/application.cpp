@@ -258,6 +258,19 @@ int our::Application::run(int run_for_frames) {
 
         if(currentState) currentState->onImmediateGui(); // Call to run any required Immediate GUI.
 
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+        window_flags |= ImGuiWindowFlags_NoMove; // Lock in place
+        window_flags |= ImGuiWindowFlags_NoBackground; // Transparent background
+
+        ImGui::SetNextWindowPos(ImVec2(win_config.size.x - 150, 20));
+
+        ImGui::Begin("HUD", NULL, window_flags);
+            ImGui::Text("Health: 100");//, character->getHealth());
+            ImGui::Text("Ammo:   inf");//, character->ammo);
+            // Draw a crosshair in the center of the screen
+            ImGui::GetForegroundDrawList()->AddCircle(ImVec2(win_config.size.x/2, win_config.size.y/2), 5.0f, IM_COL32(255, 0, 0, 255));
+        ImGui::End();
+
         // If ImGui is using the mouse or keyboard, then we don't want the captured events to affect our keyboard and mouse objects.
         // For example, if you're focusing on an input and writing "W", the keyboard object shouldn't record this event.
         keyboard.setEnabled(!io.WantCaptureKeyboard, window);
@@ -265,6 +278,7 @@ int our::Application::run(int run_for_frames) {
 
         // Render the ImGui commands we called (this doesn't actually draw to the screen yet.
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // Just in case ImGui changed the OpenGL viewport (the portion of the window to which we render the geometry),
         // we set it back to cover the whole window

@@ -15,7 +15,7 @@ namespace our {
         // Called when two bodies collide
         virtual void OnContactAdded(const JPH::Body &inBody1, const JPH::Body &inBody2, const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override {
             
-            std::cout << "Collision Detected between Body " << inBody1.GetID().GetIndex() << " and Body " << inBody2.GetID().GetIndex() << std::endl;
+            //std::cout << "Collision Detected between Body " << inBody1.GetID().GetIndex() << " and Body " << inBody2.GetID().GetIndex() << std::endl;
 
             JPH::uint64 body1data = inBody1.GetUserData();
             JPH::uint64 body2data = inBody2.GetUserData();
