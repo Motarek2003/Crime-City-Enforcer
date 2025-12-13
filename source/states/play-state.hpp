@@ -155,6 +155,7 @@ class Playstate: public our::State {
         characterController.exit();
         // Reset the animation system for next play
         animationSystem.reset();
+        physicsSystem.cleanup();
 
         npcController.exit();
         // Clear the world

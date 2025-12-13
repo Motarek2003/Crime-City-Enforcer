@@ -40,7 +40,8 @@
         "katana": "assets/textures/Kat.png",
         "deadpool": "assets/textures/Baking.png",
         "Rifle": "assets/textures/Rifle.png",
-        "city": "assets/textures/baked4K.png"
+        "city": "assets/textures/baked4K.png",
+        "taskmaster": "assets/textures/TaskMaster.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -52,7 +53,8 @@
         "katana": "assets/models/Katana.obj",
         "deadpool": "assets/models/Deadpool_baked.fbx",
         "Rifle": "assets/models/Rifle.obj",
-        "city": "assets/models/cityBaked.fbx"
+        "city": "assets/models/cityBaked.fbx",
+        "taskmaster": "assets/models/TaskMaster.fbx"
       },
       "samplers": {
         "default": {},
@@ -228,6 +230,24 @@
           "albedo": "city",
           "sampler": "default"
         },
+        "taskmaster": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "taskmaster",
+          "sampler": "default"
+        },
         "monkey": {
           "type": "lit",
           "shader": "lit",
@@ -310,7 +330,9 @@
               "RifleIdle": "assets/animations/Deadpool/RifleIdle.fbx",
               "RifleWalk": "assets/animations/Deadpool/RifleWalk.fbx",
               "RifleRun": "assets/animations/Deadpool/RifleRun.fbx",
-              "RifleShoot": "assets/animations/Deadpool/RifleShoot.fbx"
+              "RifleShoot": "assets/animations/Deadpool/RifleShoot.fbx",
+
+              "Death": "assets/animations/Deadpool/Dying.fbx"
             },
             "enabled": true
           },
@@ -569,7 +591,48 @@
           },
           {
             "type": "Character",
-            "path": [[-4,0,-4],[-4,0,4],[4,0,4],[4,0,-4]]
+            "path": [
+              [-4, 0, -4],
+              [-4, 0, 4],
+              [4, 0, 4],
+              [4, 0, -4]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.2, 0.2, 0.2],
+        "rotation": [0, 180, 0],
+        "position": [3, 1, -9],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "taskmaster",
+            "material": "taskmaster"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [10, 1, 10],
+            "offset": [0, 10, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-4, 0, -4],
+              [-4, 0, 4],
+              [4, 0, 4],
+              [4, 0, -4]
+            ]
           }
         ]
       },

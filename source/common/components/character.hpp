@@ -28,6 +28,9 @@ namespace our {
         int getIndex() {return index;}
         void setIndex(int new_index) {index = new_index;}
 
+        bool getAlive(){ return isAlive; }
+        void setAlive(bool aliveStatus) { isAlive = aliveStatus; }
+
         glm::vec3 getTarget() {return target;}
         void updateTarget(glm::vec3 new_target = glm::vec3(0.0f)) {
             if(new_target == glm::vec3(0.0f)) {
@@ -58,6 +61,7 @@ namespace our {
         //How many seconds between shots
         const float FIRE_RATE = 0.5f;
         float shootCooldownTimer = 0; 
+        bool isAlive = true;
 
     };
 

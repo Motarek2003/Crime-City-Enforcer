@@ -323,21 +323,21 @@ namespace our {
             command.mesh->draw();
         }
 
-        if(physicsSystem && physicsSystem->isDebugDrawEnabled()) {
-            auto* debugRenderer = physicsSystem->getDebugRenderer();
+        // if(physicsSystem && physicsSystem->isDebugDrawEnabled()) {
+        //     auto* debugRenderer = physicsSystem->getDebugRenderer();
             
-            if(debugRenderer && debugRenderer->IsInitialized()) {
-                debugRenderer->SetViewProjection(VP);
+        //     if(debugRenderer && debugRenderer->IsInitialized()) {
+        //         debugRenderer->SetViewProjection(VP);
 
-                JPH::BodyManager::DrawSettings settings;
-                settings.mDrawShape = true;
-                settings.mDrawShapeWireframe = true; // Use DrawLine
+        //         JPH::BodyManager::DrawSettings settings;
+        //         settings.mDrawShape = true;
+        //         settings.mDrawShapeWireframe = true; // Use DrawLine
 
-                //physicsSystem->getPhysicsSystem()->DrawBodies(settings, debugRenderer);
+        //         physicsSystem->getPhysicsSystem()->DrawBodies(settings, debugRenderer);
                 
-                debugRenderer->Render();
-            }
-        }
+        //         debugRenderer->Render();
+        //     }
+        // }
 
         // If there is a postprocess material, apply postprocessing
         if(postprocessMaterial){
