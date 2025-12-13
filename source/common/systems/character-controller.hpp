@@ -350,12 +350,22 @@ namespace our
         static void onCollision(Entity* self, Entity* other) {
             if(other->layer == "enemy_attack") 
             {
+                // Only process damage from active projectiles
+                if (other->timeRemaining <= 0) return;
+                
                 CharacterComponent* character = self->getComponent<CharacterComponent>();
+                
+                // Don't take damage if already dead
+                if (!character->getAlive()) return;
+                
                 character->setHealth(-10);
-                std::cout << "Character Health: " << character->getHealth() << std::endl; 
+                std::cout << "Character Health: " << character->getHealth() << std::endl;
+                
+                // Mark bullet as used
+                other->timeRemaining = 0;
+                
                 if(character->getHealth() == 0){
                     character->setAlive(false);
-                    //self->timeRemaining = -1;
                     if (auto animator = self->getComponent<AnimatorComponent>()) {
                         if (animator->hasAnimation("Death")) {
                             animator->setAnimation("Death");

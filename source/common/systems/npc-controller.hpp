@@ -190,11 +190,24 @@ namespace our
         static void onCollision(Entity* self, Entity* other) {
             if(other->layer == "player_attack")
             {
+                // Only process damage from active projectiles that haven't been "used"
+                if (other->timeRemaining <= 0) return;
+                
                 CharacterComponent* character = self->getComponent<CharacterComponent>();
+                
+                // Don't take damage if already dead
+                if (!character->getAlive()) return;
+                
                 character->setHealth(-10);
-                std::cout << "Enemy Health: " << character->getHealth() << std::endl; 
-                if(character->getHealth() == 0)
+                std::cout << "Enemy Health: " << character->getHealth() << std::endl;
+                
+                // Mark bullet as used so it doesn't hit multiple times
+                other->timeRemaining = 0;
+                
+                if(character->getHealth() == 0) {
+                    character->setAlive(false);
                     self->timeRemaining = -1;
+                }
             }
         }
             

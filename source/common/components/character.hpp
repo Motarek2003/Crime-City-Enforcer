@@ -20,7 +20,10 @@ namespace our {
         void onCollisionEnter(Entity* other);
 
         int getHealth() { return health;}
-        void setHealth(int delta) { health += delta; }
+        void setHealth(int delta) { 
+            health += delta; 
+            if (health < 0) health = 0;  // Prevent negative health
+        }
 
         States getState() {return state;}
         void setState(States new_state) {state = new_state;}
