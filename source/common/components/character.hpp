@@ -61,8 +61,8 @@ namespace our {
         int index = 0;
         States state = States::PATROL;
         glm::vec3 target;
-        //How many seconds between shots
-        const float FIRE_RATE = 0.5f;
+        //How many seconds between shots (higher = slower firing)
+        const float FIRE_RATE = 1.5f;
         float shootCooldownTimer = 0; 
         bool isAlive = true;
 

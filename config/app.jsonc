@@ -661,7 +661,8 @@
               "idle": "assets/animations/TaskMaster/TaskMaster@Idle.fbx",
               "walk": "assets/animations/TaskMaster/TaskMaster@Walk.fbx",
               "run": "assets/animations/TaskMaster/TaskMaster@Run.fbx",
-              "block": "assets/animations/TaskMaster/TaskMaster@Block.fbx"
+              "block": "assets/animations/TaskMaster/TaskMaster@Block.fbx",
+              "death": "assets/animations/TaskMaster/TaskMaster@Death.fbx"
             }
           }
         ],

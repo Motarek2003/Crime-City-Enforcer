@@ -12,7 +12,7 @@
 #include <array>
 
 // This state shows how to use some of the abstractions we created to make a menu.
-class DeadState: public our::State {
+class WinState: public our::State {
 
     // A meterial holding the menu shader and the menu texture to draw
     our::TexturedMaterial* menuMaterial;
@@ -34,7 +34,7 @@ class DeadState: public our::State {
         menuMaterial->shader->attach("assets/shaders/textured.frag", GL_FRAGMENT_SHADER);
         menuMaterial->shader->link();
         // Then we load the menu texture
-        menuMaterial->texture = our::texture_utils::loadImage("assets/textures/wasted.png");
+        menuMaterial->texture = our::texture_utils::loadImage("assets/textures/win.jpg");
         // Initially, the menu material will be black, then it will fade in
         menuMaterial->tint = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 

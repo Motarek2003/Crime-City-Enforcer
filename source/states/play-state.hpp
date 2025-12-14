@@ -19,6 +19,7 @@
 
 #include <systems/npc-controller.hpp>
 #include <systems/boss-controller.hpp>
+#include <systems/game-manager.hpp>
 
 
 // This state shows how to use the ECS framework and deserialization.
@@ -38,6 +39,7 @@ class Playstate: public our::State {
 
     our::NPCControllerSystem npcController;
     our::BossControllerSystem bossController;
+    our::GameManager gameManager;
 
 
     void onInitialize() override {
@@ -71,6 +73,7 @@ class Playstate: public our::State {
         inventoryController.enter(getApp());
         npcController.enter(getApp());
         bossController.enter(getApp());
+        gameManager.enter(getApp(), &bossController);
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
@@ -114,6 +117,9 @@ class Playstate: public our::State {
             }
         }
         ImGui::End();
+        
+        // Game Status UI
+        gameManager.drawUI();
     }
 
     void onDraw(double deltaTime) override {
@@ -131,6 +137,7 @@ class Playstate: public our::State {
         boneAttachmentSystem.update(&world, (float)deltaTime);
         npcController.update(&world, (float)deltaTime, &physicsSystem);
         bossController.update(&world, (float)deltaTime, &physicsSystem);
+        gameManager.update(&world, (float)deltaTime, getApp());
         // And finally we use the renderer system to draw the scene
         renderer.render(&world, &physicsSystem);
 
@@ -163,6 +170,7 @@ class Playstate: public our::State {
 
         npcController.exit();
         bossController.exit();
+        gameManager.exit();
         // Clear the world
         world.clear();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM

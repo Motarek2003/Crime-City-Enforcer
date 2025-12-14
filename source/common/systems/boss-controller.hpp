@@ -48,6 +48,13 @@ namespace our
         bool isPlayingAnimation = false;
         std::string currentAnimState = "idle";
         
+        // Boss activation state (controlled by GameManager) - static so onCollision can check it
+        static inline bool bossActivated = false;
+        
+        // Attack cooldown
+        static constexpr float ATTACK_COOLDOWN = 2.0f;  // 2 seconds between attacks
+        float attackTimer = 0.0f;
+        
     public:
         void enter(Application* app) {
             this->app = app;
@@ -61,11 +68,26 @@ namespace our
                 
             isPlayingAnimation = false;
             currentAnimState = "idle";
+            bossActivated = false;
+            attackTimer = ATTACK_COOLDOWN;  // Start ready to attack
         }
+        
+        // Called by GameManager to activate the boss
+        void activateBoss() { 
+            bossActivated = true; 
+            std::cout << "Taskmaster Activated!" << std::endl;
+        }
+        
+        bool isBossActivated() const { return bossActivated; }
 
         void update(World* world, float deltaTime, our::PhysicsSystem* physicsSystem) {
             JPH::BodyInterface* bodyInterface = physicsSystem->getBodyInterface();
             if (!bodyInterface) return;
+            
+            // Update attack cooldown
+            if (attackTimer < ATTACK_COOLDOWN) {
+                attackTimer += deltaTime;
+            }
             
             for (auto entity : world->getEntities()) {
                 // Only process the taskmaster boss
@@ -74,17 +96,29 @@ namespace our
                 CharacterComponent* character = entity->getComponent<CharacterComponent>();
                 if (!character) continue;
                 
-                // Skip if boss is dead
-                if (!character->getAlive()) {
-                    handleDeathAnimation(entity);
-                    continue;
-                }
+
                 
                 AnimatorComponent* animator = entity->getComponent<AnimatorComponent>();
                 RigidBodyComponent* rb = entity->getComponent<RigidBodyComponent>();
                 
+                // Skip if boss is dead
+                if (!character->getAlive()) {
+                    handleDeathAnimation(entity);
+                    if (animator && animator->isAnimationFinished()) animator->stop();
+                    continue;
+                }
+
                 // Skip if no rigidbody or body not yet created
                 if (!rb || rb->runtimeBodyID.IsInvalid()) continue;
+                
+                // If boss is not activated yet, just stay in idle
+                if (!bossActivated) {
+                    setAnimation(animator, "idle");
+                    // Stop any movement
+                    JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
+                    bodyInterface->SetLinearVelocity(rb->runtimeBodyID, JPH::Vec3(0, currentVel.GetY(), 0));
+                    continue;
+                }
                 
                 // Get boss world position
                 glm::mat4 worldTransform = entity->getLocalToWorldMatrix();
@@ -254,11 +288,9 @@ namespace our
         void handleDeathAnimation(Entity* entity) {
             auto animator = entity->getComponent<AnimatorComponent>();
             if (animator && animator->enabled) {
-                // TODO: Play death animation when available
-                // For now, just mark entity for removal
-                if (entity->timeRemaining == 0) {
-                    entity->timeRemaining = -1;  // Mark for deletion
-                }
+                // Play death animation if available
+                setAnimation(animator, "death");
+                // The boss entity should remain in the world during victory sequence
             }
         }
         
@@ -267,6 +299,13 @@ namespace our
             if (other->layer == "player_attack") {
                 // Only process damage from active projectiles
                 if (other->timeRemaining <= 0) return;
+                
+                // Don't take damage if boss fight hasn't started yet
+                if (!bossActivated) {
+                    // Just destroy the bullet without dealing damage
+                    other->timeRemaining = 0;
+                    return;
+                }
                 
                 CharacterComponent* character = self->getComponent<CharacterComponent>();
                 if (!character) return;
