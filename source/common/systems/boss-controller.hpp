@@ -131,7 +131,7 @@ namespace our
                 glm::vec3 forward = (forwardLen > 0.001f) ? forwardRaw / forwardLen : glm::vec3(0, 0, 1);
                 
                 // Scan for player with wide cone
-                LayerFilter myFilter({Layers::ENEMY, Layers::ENEMY_ATTACK, Layers::PLAYER_ATTACK});
+                LayerFilter myFilter({Layers::ENEMY, Layers::ENEMY_ATTACK, Layers::PLAYER_ATTACK, Layers::ENEMY_AWARENESS});
                 RaycastHit hit;
                 hit.hasHit = false;
                 

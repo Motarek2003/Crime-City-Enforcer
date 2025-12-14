@@ -7,7 +7,7 @@
 #include "../ecs/world.hpp"
 #include "../components/character.hpp"
 #include "./physics-system.hpp"
-#include "./boss-controller.hpp"
+#include "./enemy-controller.hpp"
 #include "../application.hpp"
 #include <imgui.h>
 
@@ -56,9 +56,9 @@ namespace our {
         };
 
     public:
-        BossControllerSystem* bossController = nullptr;
+        EnemyControllerSystem* bossController = nullptr;
         
-        void enter(Application* app, BossControllerSystem* bossCtrl = nullptr) {
+        void enter(Application* app, EnemyControllerSystem* bossCtrl = nullptr) {
             this->app = app;
             this->bossController = bossCtrl;
             reset();

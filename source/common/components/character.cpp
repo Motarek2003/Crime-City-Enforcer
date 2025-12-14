@@ -1,6 +1,6 @@
 #include "character.hpp"
 #include "../systems/character-controller.hpp"
-#include "../systems/npc-controller.hpp"
+#include "../systems/enemy-controller.hpp"
 #include "../systems/boss-controller.hpp"
 
 namespace glm {
@@ -17,10 +17,8 @@ namespace our
 {
     void CharacterComponent::onCollisionEnter(Entity* other) {
         Entity* self = this->getOwner();
-        if (self->name == "taskmaster" && isAlive)
-            our::BossControllerSystem::onCollision(self, other);
-        else if (self->name == "enemy" && isAlive)
-            our::NPCControllerSystem::onCollision(self, other);
+        if ((self->name == "enemy" || self->name == "taskmaster" )&& isAlive)
+            our::EnemyControllerSystem::onCollision(self, other);
         else
             our::CharacterControllerSystem::onCollision(self, other);
     }
@@ -28,7 +26,7 @@ namespace our
     void CharacterComponent::onTriggerEnter(Entity* other) {
         Entity* self = this->getOwner();
         if (self->name == "enemy" && isAlive)
-            our::NPCControllerSystem::onTrigger(self, other);
+            our::EnemyControllerSystem::onTrigger(self, other);
     }
 
     void CharacterComponent::deserialize(const nlohmann::json& data) {

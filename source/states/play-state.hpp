@@ -17,7 +17,7 @@
 #include <systems/animation-system.hpp>
 #include <systems/bone-attachment-system.hpp>
 
-#include <systems/npc-controller.hpp>
+#include <systems/enemy-controller.hpp>
 #include <systems/boss-controller.hpp>
 #include <systems/game-manager.hpp>
 
@@ -37,8 +37,8 @@ class Playstate: public our::State {
     our::AnimationSystem animationSystem;
     our::BoneAttachmentSystem boneAttachmentSystem;
 
-    our::NPCControllerSystem npcController;
-    our::BossControllerSystem bossController;
+    our::EnemyControllerSystem enemyController;
+    //our::BossControllerSystem bossController;
     our::GameManager gameManager;
 
 
@@ -71,12 +71,13 @@ class Playstate: public our::State {
         cameraController.enter(getApp());
         characterController.enter(getApp());
         inventoryController.enter(getApp());
-        npcController.enter(getApp());
-        bossController.enter(getApp());
-        gameManager.enter(getApp(), &bossController);
+        enemyController.enter(getApp());
+        //bossController.enter(getApp());
+        gameManager.enter(getApp(), &enemyController);
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
+        std::cout << "init done" << std::endl;
     }
 
     void onImmediateGui() override {
@@ -135,8 +136,8 @@ class Playstate: public our::State {
         inventoryController.update(&world, (float)deltaTime);
         animationSystem.update(&world, (float)deltaTime);
         boneAttachmentSystem.update(&world, (float)deltaTime);
-        npcController.update(&world, (float)deltaTime, &physicsSystem);
-        bossController.update(&world, (float)deltaTime, &physicsSystem);
+        enemyController.update(&world, (float)deltaTime, &physicsSystem);
+        //bossController.update(&world, (float)deltaTime, &physicsSystem);
         gameManager.update(&world, (float)deltaTime, getApp());
         // And finally we use the renderer system to draw the scene
         renderer.render(&world, &physicsSystem);
@@ -168,8 +169,8 @@ class Playstate: public our::State {
         animationSystem.reset();
         physicsSystem.cleanup();
 
-        npcController.exit();
-        bossController.exit();
+        enemyController.exit();
+        //bossController.exit();
         gameManager.exit();
         // Clear the world
         world.clear();
