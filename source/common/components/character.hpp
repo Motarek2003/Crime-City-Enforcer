@@ -19,6 +19,8 @@ namespace our {
 
         void onCollisionEnter(Entity* other);
 
+        void onTriggerEnter(Entity* other);
+
         int getHealth() { return health;}
         void setHealth(int delta) { 
             health += delta; 
@@ -45,12 +47,24 @@ namespace our {
 
         }
 
-        float getTimer() {return shootCooldownTimer;}
-        void setTimer(float new_timer, bool reset) {
-            if (reset)
-                shootCooldownTimer = FIRE_RATE;
+        float getTimer(int index = 1) {
+            if(index==1)
+                return primaryShootCooldownTimer;
             else
-                shootCooldownTimer = new_timer;
+                return secondaryShootCooldownTimer;
+            }
+        void setTimer(float new_timer, bool reset, int index = 1) {
+            if(index == 1) {
+                if (reset)
+                    primaryShootCooldownTimer = primaryFireRate;
+                else
+                    primaryShootCooldownTimer = new_timer;
+            } else {
+                if (reset)
+                    secondaryShootCooldownTimer = secondaryFireRate;
+                else
+                    secondaryShootCooldownTimer = new_timer;
+            }
         }
 
         // Reads camera Character from the given json object
@@ -62,8 +76,10 @@ namespace our {
         States state = States::PATROL;
         glm::vec3 target;
         //How many seconds between shots
-        const float FIRE_RATE = 0.5f;
-        float shootCooldownTimer = 0; 
+        const float primaryFireRate = 0.5f;
+        float primaryShootCooldownTimer = 0; 
+        const float secondaryFireRate = 2.0f;
+        float secondaryShootCooldownTimer = 0; 
         bool isAlive = true;
 
     };

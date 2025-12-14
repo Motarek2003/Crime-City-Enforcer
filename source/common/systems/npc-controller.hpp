@@ -33,7 +33,7 @@ namespace our
     // For more information, see "common/components/character-controller.hpp"
     class NPCControllerSystem {
         Application* app; // The application in which the state runs
-        nlohmann::json object_data;
+        nlohmann::json bullet;
     public:
         // When a state enters, it should call this function and give it the pointer to the application
         void enter(Application* app){
@@ -45,7 +45,7 @@ namespace our
             if(!file_in)
                 std::cerr << "Couldn't open file: " << config_path << std::endl;
             else
-                object_data = nlohmann::json::parse(file_in, nullptr, true, true);
+                bullet = nlohmann::json::parse(file_in, nullptr, true, true);
         }
         // This should be called every frame to update all entities containing a CharacterComponent 
         void update(World* world, float deltaTime, our::PhysicsSystem* physicsSystem) {
@@ -62,7 +62,7 @@ namespace our
 
                     glm::vec3 direction = glm::normalize(glm::vec3(worldTransform * glm::vec4(0, 0, 1, 0)));
 
-                    LayerFilter myFilter({Layers::ENEMY, Layers::ENEMY_ATTACK, Layers::PLAYER_ATTACK});
+                    LayerFilter myFilter({Layers::ENEMY, Layers::ENEMY_ATTACK, Layers::PLAYER_ATTACK, Layers::ENEMY_AWARENESS});
                     RaycastHit hit;
                     hit.hasHit = false;
                     for(int i = -8; i <= 8; i++)
@@ -110,26 +110,26 @@ namespace our
                         if(distance > 2)
                             character->updateTarget(hit.position);
                         float timer = character->getTimer();
-                        timer -= deltaTime;
-                        //std::cout<<timer<<std::endl;
-                        if (timer <= 0)
-                        {
-                            glm::vec3 shot_dir = glm::normalize(hit.position - startPos);
-                            JPH::Vec3 forwardImpulse = JPH::Vec3(shot_dir.x, shot_dir.y, shot_dir.z) * 100.0f;
-                            ObjectSpawner::spawnObject(
-                                world,
-                                nullptr,
-                                object_data,
-                                startPos,
-                                glm::vec3(0.0f),
-                                glm::vec3(0.1f),
-                                forwardImpulse,
-                                10.0f,
-                                "enemy_attack"
-                            );
-                            character->setTimer(0, true);
-                        } else
-                            character->setTimer(timer, false);
+                            timer -= deltaTime;
+                            //std::cout<<timer<<std::endl;
+                            if (timer <= 0)
+                            {
+                                glm::vec3 shot_dir = glm::normalize(hit.position - startPos);
+                                JPH::Vec3 forwardImpulse = JPH::Vec3(shot_dir.x, shot_dir.y, shot_dir.z) * 100.0f;
+                                ObjectSpawner::spawnObject(
+                                    world,
+                                    nullptr,
+                                    bullet,
+                                    startPos,
+                                    glm::vec3(0.0f),
+                                    glm::vec3(0.1f),
+                                    forwardImpulse,
+                                    10.0f,
+                                    "enemy_attack"
+                                );
+                                character->setTimer(0, true);
+                            } else
+                                character->setTimer(timer, false);
                     } else if(character->getState() == States::INVESTIGATION){
                         glm::vec3 target = character->getTarget();
                         target.y = startPos.y;
@@ -208,6 +208,44 @@ namespace our
                     character->setAlive(false);
                     self->timeRemaining = -1;
                 }
+            }
+        }
+
+        static void onTrigger(Entity* self, Entity* other) {
+            if(other->layer == "player_attack")
+            {
+                // Only process damage from active projectiles that haven't been "used"
+                if (other->timeRemaining <= 0) return;
+                
+                CharacterComponent* character = self->getComponent<CharacterComponent>();
+                
+                // Don't take damage if already dead
+                if (!character->getAlive()) return;
+
+                glm::vec3 new_Direction = glm::normalize(glm::vec3(other->getLocalToWorldMatrix()[3]) - glm::vec3(self->getLocalToWorldMatrix()[3]));
+
+
+                glm::vec3& rotation = self->localTransform.rotation;
+
+                if(glm::length(new_Direction) > 0) 
+                {
+                    new_Direction = glm::normalize(new_Direction);
+                    float targetAngle = glm::atan(new_Direction.x, new_Direction.z);
+
+                    rotation.y = targetAngle; 
+                }
+                if(character->getState() != States::PURSUIT) {
+                    character->setState(States::INVESTIGATION);
+                    character->updateTarget(glm::vec3(other->getLocalToWorldMatrix()[3]));
+                    std::cout << "block" << std::endl;
+                    glm::vec3 target = character->getTarget();
+                    glm::vec3 player = glm::vec3(self->getLocalToWorldMatrix()[3]);
+                    target.y = player.y;
+                    float distance = glm::length(glm::abs(player - target));
+                    std::cout << distance << std::endl;
+                }
+
+                //character->block;
             }
         }
             

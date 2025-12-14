@@ -25,7 +25,8 @@ namespace our {
         static constexpr JPH::ObjectLayer PLAYER_ATTACK = 2;
         static constexpr JPH::ObjectLayer ENEMY = 3;
         static constexpr JPH::ObjectLayer ENEMY_ATTACK = 4;
-        static constexpr JPH::ObjectLayer NUM_LAYERS = 5;
+        static constexpr JPH::ObjectLayer ENEMY_AWARENESS = 5;
+        static constexpr JPH::ObjectLayer NUM_LAYERS = 6;
     };
 
 

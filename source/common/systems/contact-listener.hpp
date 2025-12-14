@@ -25,7 +25,14 @@ namespace our {
             Entity* entity2 = reinterpret_cast<Entity*>(body2data);
 
             if(entity1 && entity2) {
-                
+                if(entity1->layer == "enemy_awareness")
+                    if(auto* script = entity1->parent->getComponent<CharacterComponent>())
+                        script->onTriggerEnter(entity2);
+
+                if(entity2->layer == "enemy_awareness")
+                    if(auto* script = entity2->parent->getComponent<CharacterComponent>())
+                        script->onTriggerEnter(entity1);
+
                 if (auto* script = entity1->getComponent<CharacterComponent>()) {
                     script->onCollisionEnter(entity2);
                 }

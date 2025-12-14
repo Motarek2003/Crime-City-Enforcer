@@ -22,6 +22,12 @@ namespace our
             our::CharacterControllerSystem::onCollision(self, other);
     }
 
+    void CharacterComponent::onTriggerEnter(Entity* other) {
+        Entity* self = this->getOwner();
+        if (self->name == "enemy" && isAlive)
+            our::NPCControllerSystem::onTrigger(self, other);
+    }
+
     void CharacterComponent::deserialize(const nlohmann::json& data) {
         if(data.contains("path")){ 
             path = data["path"].get<std::vector<glm::vec3>>();
