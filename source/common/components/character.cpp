@@ -1,6 +1,7 @@
 #include "character.hpp"
 #include "../systems/character-controller.hpp"
 #include "../systems/npc-controller.hpp"
+#include "../systems/boss-controller.hpp"
 
 namespace glm {
     void from_json(const nlohmann::json& j, glm::vec3& v) {
@@ -16,7 +17,9 @@ namespace our
 {
     void CharacterComponent::onCollisionEnter(Entity* other) {
         Entity* self = this->getOwner();
-        if (self->name == "enemy" && isAlive)
+        if (self->name == "taskmaster" && isAlive)
+            our::BossControllerSystem::onCollision(self, other);
+        else if (self->name == "enemy" && isAlive)
             our::NPCControllerSystem::onCollision(self, other);
         else
             our::CharacterControllerSystem::onCollision(self, other);
