@@ -41,7 +41,8 @@
         "deadpool": "assets/textures/Baking.png",
         "Rifle": "assets/textures/Rifle.png",
         "city": "assets/textures/baked4K.png",
-        "taskmaster": "assets/textures/TaskMaster.png"
+        "taskmaster": "assets/textures/TaskMaster.png",
+        "shield": "assets/textures/shield.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -54,7 +55,8 @@
         "deadpool": "assets/models/Deadpool_baked.fbx",
         "Rifle": "assets/models/Rifle.obj",
         "city": "assets/models/cityBaked.fbx",
-        "taskmaster": "assets/models/TaskMaster.fbx"
+        "taskmaster": "assets/models/TaskMaster.fbx",
+        "shield": "assets/models/shield.fbx"
       },
       "samplers": {
         "default": {},
@@ -246,6 +248,24 @@
           "specular_color": [1, 1, 1],
           "ambient": [1, 1, 1],
           "albedo": "taskmaster",
+          "sampler": "default"
+        },
+        "shield": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "shield",
           "sampler": "default"
         },
         "monkey": {
@@ -601,9 +621,9 @@
         ]
       },
       {
-        "name": "enemy",
+        "name": "taskmaster",
         "layer": "enemy",
-        "scale": [0.2, 0.2, 0.2],
+        "scale": [0.02, 0.02, 0.02],
         "rotation": [0, 180, 0],
         "position": [3, 1, -9],
         "components": [
@@ -633,10 +653,41 @@
               [4, 0, 4],
               [4, 0, -4]
             ]
+          },
+          {
+            "type": "Animator",
+            "mesh": "assets/models/TaskMaster.fbx",
+            "animations": {
+              "idle": "assets/animations/TaskMaster/TaskMaster@Idle.fbx",
+              "walk": "assets/animations/TaskMaster/TaskMaster@Walk.fbx",
+              "run": "assets/animations/TaskMaster/TaskMaster@Run.fbx",
+              "block": "assets/animations/TaskMaster/TaskMaster@Block.fbx",
+              "death": "assets/animations/TaskMaster/TaskMaster@Death.fbx"
+            }
           }
         ],
         "children": [
           {
+            "name": "shield",
+            "scale": [1, 1, 1],
+            "rotation": [0, 0, 0],
+            "position": [50, 100, 20],
+            "components": [
+              {
+                "type": "Mesh Renderer",
+                "mesh": "shield",
+                "material": "shield"
+              },
+              {
+                "type": "Bone Attachment",
+                "bone": "ValveBiped_Anim_Attachment_RH",
+                "positionOffset": [0, 0, 0],
+                "rotationOffset": [0, 0, 0],
+                "scale": [1, 1, 1]
+              }
+            ]
+          },
+                    {
               "layer": "enemy_awareness", 
               "position": [0, 10, 0], 
               "rotation": [0, 0, 0],
