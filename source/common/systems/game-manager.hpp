@@ -158,6 +158,7 @@ namespace our {
                     break;
                     
                 case GamePhase::WAVE_COMBAT:
+                // SCRAPPED
                     // Check if wave is complete
                     if (aliveEnemies == 0) {
                         currentWave++;

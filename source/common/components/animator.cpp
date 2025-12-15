@@ -37,11 +37,13 @@ namespace our {
             skeletalMesh = mesh_utils::loadSkeletalMesh(meshPath, boneInfoMap);
             std::cout << "AnimatorComponent: Loaded skeletal mesh with " 
                       << boneInfoMap.size() << " bones:" << std::endl;
+            std::cout.flush();
             
             // Print all bone names for debugging
             for (const auto& [boneName, boneInfo] : boneInfoMap) {
                 std::cout << "  - Bone: " << boneName << " (ID: " << boneInfo.id << ")" << std::endl;
             }
+            std::cout.flush();
         }
         
         // Load all animations using the same boneInfoMap
@@ -50,6 +52,7 @@ namespace our {
                 Animation* anim = new Animation(path, boneInfoMap);
                 animations[name] = anim;
                 std::cout << "AnimatorComponent: Loaded animation '" << name << "': " << path << std::endl;
+                std::cout.flush();
             }
             
             // Set default animation (prefer "idle", then "default", then first available)

@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iostream>
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -46,10 +47,12 @@ namespace our {
                 aiProcess_Triangulate);
             
             if (!scene || !scene->mRootNode) {
+                std::cerr << "Animation: Failed to load " << animationPath << std::endl;
                 return;
             }
 
             if (scene->mNumAnimations == 0) {
+                std::cerr << "Animation: No animations found in " << animationPath << std::endl;
                 return;
             }
 
@@ -59,6 +62,9 @@ namespace our {
             if (ticksPerSecond == 0.0f) {
                 ticksPerSecond = 25.0f;
             }
+
+            std::cout << "Animation: Loading " << animationPath << " with " 
+                      << animation->mNumChannels << " bone channels" << std::endl;
 
             readHierarchyData(rootNode, scene->mRootNode);
             readMissingBones(animation, boneInfoMap);
@@ -92,6 +98,9 @@ namespace our {
                 }
             }
 
+            int matchedBones = 0;
+            int newBones = 0;
+
             // Reading channels (bones engaged in animation and their keyframes)
             for (int i = 0; i < size; ++i) {
                 auto channel = animation->mChannels[i];
@@ -101,9 +110,19 @@ namespace our {
                     boneInfoMap[boneName].id = boneCount;
                     boneInfoMap[boneName].offset = glm::mat4(1.0f);
                     boneCount++;
+                    newBones++;
+                    // Print first few unmatched bones for debugging
+                    if (newBones <= 5) {
+                        std::cout << "  Animation bone NOT in mesh: " << boneName << std::endl;
+                    }
+                } else {
+                    matchedBones++;
                 }
                 bones.push_back(Bone(boneName, boneInfoMap[boneName].id, channel));
             }
+            
+            std::cout << "  Animation: " << matchedBones << " bones matched, " 
+                      << newBones << " new bones added" << std::endl;
 
             this->boneInfoMap = boneInfoMap;
         }

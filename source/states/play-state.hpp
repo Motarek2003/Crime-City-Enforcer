@@ -21,6 +21,8 @@
 #include <systems/boss-controller.hpp>
 #include <systems/game-manager.hpp>
 
+#include <texture/texture-utils.hpp>
+
 
 // This state shows how to use the ECS framework and deserialization.
 class Playstate: public our::State {
@@ -40,6 +42,9 @@ class Playstate: public our::State {
     our::EnemyControllerSystem enemyController;
     //our::BossControllerSystem bossController;
     our::GameManager gameManager;
+
+    // HUD Elements
+    our::Texture2D* crosshairTexture = nullptr;
 
 
     void onInitialize() override {
@@ -77,47 +82,185 @@ class Playstate: public our::State {
         // Then we initialize the renderer
         auto size = getApp()->getFrameBufferSize();
         renderer.initialize(size, config["renderer"]);
+        
+        // Load HUD textures
+        crosshairTexture = our::texture_utils::loadImage("assets/textures/Crosshair.png", false);
+        
         std::cout << "init done" << std::endl;
     }
 
     void onImmediateGui() override {
-        // Find the player entity with inventory
-        our::InventoryComponent* inventory = nullptr;
-        for(auto entity : world.getEntities()){
-            inventory = entity->getComponent<our::InventoryComponent>();
-            if(inventory) break;
+        // Get display size for HUD positioning
+        ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+        
+        // === CROSSHAIR ===
+        if (crosshairTexture) {
+            float crosshairSize = 64.0f;
+            ImVec2 crosshairPos(
+                displaySize.x * 0.5f - crosshairSize * 0.5f,
+                displaySize.y * 0.5f - crosshairSize * 0.5f
+            );
+            
+            ImGui::SetNextWindowPos(crosshairPos);
+            ImGui::SetNextWindowSize(ImVec2(crosshairSize, crosshairSize));
+            ImGui::Begin("Crosshair", nullptr, 
+                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | 
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
+            
+            ImGui::Image((ImTextureID)(intptr_t)crosshairTexture->getOpenGLName(), 
+                         ImVec2(crosshairSize, crosshairSize));
+            ImGui::End();
         }
-
-        if(!inventory) return;
-
-        ImGui::Begin("Inventory");
-        for(int i = 0; i < inventory->slots.size(); ++i){
-            std::string label = "Slot " + std::to_string(i + 1);
-            if(i == inventory->activeSlot){
-                label += " (Active)";
-                ImGui::TextColored(ImVec4(0, 1, 0, 1), "%s", label.c_str());
-            } else {
-                ImGui::Text("%s", label.c_str());
+        
+        // === Find Player and Boss entities ===
+        our::Entity* playerEntity = nullptr;
+        our::Entity* bossEntity = nullptr;
+        our::CharacterComponent* playerCharacter = nullptr;
+        our::CharacterComponent* bossCharacter = nullptr;
+        our::InventoryComponent* inventory = nullptr;
+        
+        for(auto entity : world.getEntities()){
+            if (entity->name == "deadpool") {
+                playerEntity = entity;
+                playerCharacter = entity->getComponent<our::CharacterComponent>();
+                inventory = entity->getComponent<our::InventoryComponent>();
+            } else if (entity->name == "taskmaster") {
+                bossEntity = entity;
+                bossCharacter = entity->getComponent<our::CharacterComponent>();
+            }
+        }
+        
+        // === PLAYER HUD (Bottom Left) ===
+        {
+            ImGui::SetNextWindowPos(ImVec2(20, displaySize.y - 150), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(250, 130), ImGuiCond_Always);
+            
+            ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | 
+                                      ImGuiWindowFlags_NoResize | 
+                                      ImGuiWindowFlags_NoMove |
+                                      ImGuiWindowFlags_NoScrollbar;
+            
+            ImGui::Begin("PlayerHUD", nullptr, flags);
+            
+            // Player Health Bar
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "HEALTH");
+            int playerHealth = playerCharacter ? playerCharacter->getHealth() : 0;
+            float healthPercent = playerHealth / 100.0f;
+            
+            // Color based on health
+            ImVec4 healthColor;
+            if (healthPercent > 0.6f) healthColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);       // Green
+            else if (healthPercent > 0.3f) healthColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow
+            else healthColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);                             // Red
+            
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, healthColor);
+            ImGui::ProgressBar(healthPercent, ImVec2(230, 20), "");
+            ImGui::PopStyleColor();
+            
+            // Health text overlay
+            char healthText[32];
+            snprintf(healthText, sizeof(healthText), "%d / 100", playerHealth);
+            ImGui::SameLine(0, -230);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 90);
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "%s", healthText);
+            
+            ImGui::Spacing();
+            
+            // Ammo Display
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "AMMO");
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "INF");  // Infinite ammo for now
+            
+            ImGui::End();
+        }
+        
+        // === BOSS HUD (Top Center - only during boss fight) ===
+        if (gameManager.getPhase() == our::GamePhase::BOSS_FIGHT && bossCharacter && bossCharacter->getAlive()) {
+            ImGui::SetNextWindowPos(ImVec2(displaySize.x * 0.5f, 60), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+            ImGui::SetNextWindowSize(ImVec2(400, 100), ImGuiCond_Always);
+            
+            ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | 
+                                      ImGuiWindowFlags_NoResize | 
+                                      ImGuiWindowFlags_NoMove |
+                                      ImGuiWindowFlags_NoScrollbar;
+            
+            ImGui::Begin("BossHUD", nullptr, flags);
+            
+            // Boss Name and Phase
+            int bossPhase = enemyController.getBossPhase();
+            char bossTitle[64];
+            snprintf(bossTitle, sizeof(bossTitle), "TASKMASTER - PHASE %d", bossPhase);
+            
+            float titleWidth = ImGui::CalcTextSize(bossTitle).x;
+            ImGui::SetCursorPosX((400 - titleWidth) * 0.5f);
+            
+            // Phase colors
+            ImVec4 phaseColor;
+            switch (bossPhase) {
+                case 1: phaseColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); break;  // Yellow
+                case 2: phaseColor = ImVec4(1.0f, 0.5f, 0.0f, 1.0f); break;  // Orange
+                case 3: phaseColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); break;  // Red
+                default: phaseColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); break;
+            }
+            ImGui::TextColored(phaseColor, "%s", bossTitle);
+            
+            // Boss blocking indicator
+            if (enemyController.isBossBlocking()) {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.0f, 0.7f, 1.0f, 1.0f), " [BLOCKING]");
             }
             
-            // List items in slot
-            if(!inventory->slots[i].empty()){
-                ImGui::SameLine();
-                ImGui::Text(": ");
-                for(size_t j = 0; j < inventory->slots[i].size(); ++j){
-                    ImGui::SameLine();
-                    ImGui::Text("%s", inventory->slots[i][j].c_str());
-                    if(j < inventory->slots[i].size() - 1) {
-                        ImGui::SameLine();
-                        ImGui::Text(",");
-                    }
-                }
-            } else {
-                 ImGui::SameLine();
-                 ImGui::Text(": Empty");
-            }
+            // Boss Health Bar
+            int bossHealth = bossCharacter->getHealth();
+            float bossHealthPercent = bossHealth / 100.0f;
+            
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, phaseColor);
+            ImGui::SetCursorPosX(10);
+            ImGui::ProgressBar(bossHealthPercent, ImVec2(380, 25), "");
+            ImGui::PopStyleColor();
+            
+            // Health text
+            char bossHealthText[32];
+            snprintf(bossHealthText, sizeof(bossHealthText), "%d / 100", bossHealth);
+            float textWidth = ImGui::CalcTextSize(bossHealthText).x;
+            ImGui::SetCursorPosX((400 - textWidth) * 0.5f);
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "%s", bossHealthText);
+            
+            ImGui::End();
         }
-        ImGui::End();
+        
+        // === INVENTORY (Hide during combat for cleaner HUD) ===
+        if (inventory && gameManager.getPhase() != our::GamePhase::BOSS_FIGHT) {
+            ImGui::Begin("Inventory");
+            for(int i = 0; i < inventory->slots.size(); ++i){
+                std::string label = "Slot " + std::to_string(i + 1);
+                if(i == inventory->activeSlot){
+                    label += " (Active)";
+                    ImGui::TextColored(ImVec4(0, 1, 0, 1), "%s", label.c_str());
+                } else {
+                    ImGui::Text("%s", label.c_str());
+                }
+                
+                // List items in slot
+                if(!inventory->slots[i].empty()){
+                    ImGui::SameLine();
+                    ImGui::Text(": ");
+                    for(size_t j = 0; j < inventory->slots[i].size(); ++j){
+                        ImGui::SameLine();
+                        ImGui::Text("%s", inventory->slots[i][j].c_str());
+                        if(j < inventory->slots[i].size() - 1) {
+                            ImGui::SameLine();
+                            ImGui::Text(",");
+                        }
+                    }
+                } else {
+                     ImGui::SameLine();
+                     ImGui::Text(": Empty");
+                }
+            }
+            ImGui::End();
+        }
         
         // Game Status UI
         gameManager.drawUI();
@@ -172,6 +315,13 @@ class Playstate: public our::State {
         enemyController.exit();
         //bossController.exit();
         gameManager.exit();
+        
+        // Clean up HUD textures
+        if (crosshairTexture) {
+            delete crosshairTexture;
+            crosshairTexture = nullptr;
+        }
+        
         // Clear the world
         world.clear();
         // and we delete all the loaded assets to free memory on the RAM and the VRAM

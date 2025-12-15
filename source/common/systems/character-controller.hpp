@@ -36,7 +36,16 @@ namespace our
         nlohmann::json object_data;
         bool wasWalking = false;  // Track previous walking state
         bool isPlayingAttackAnimation = false;  // Track if attack animation is playing
+        static inline bool leftAttackPressed = false;  // Track katana attack alternation
+        int healCounter = 0;  // Track number of heals used
 
+        // Constants
+        static constexpr float BASE_SPEED = 20.0f;
+        static constexpr float SPRINT_MULTIPLIER = 5.0f;
+        static constexpr float JUMP_FORCE = 5.0f;
+        static constexpr float BULLET_SPEED = 100.0f;
+        static constexpr int MAX_HEALS = 5;
+        static constexpr int HEAL_AMOUNT = 20;
 
     public:
         // When a state enters, it should call this function and give it the pointer to the application
@@ -57,296 +66,288 @@ namespace our
         }
         // This should be called every frame to update all entities containing a CharacterComponent 
         void update(World* world, float deltaTime, our::PhysicsSystem* physicsSystem) {
+            // Find player and camera
+            auto [character, camera] = findPlayerAndCamera(world);
+            if (!character || !camera) return;
+
+            Entity* playerEntity = character->getOwner();
+            Entity* cameraEntity = camera->getOwner();
             JPH::BodyInterface* bodyInterface = physicsSystem->getBodyInterface();
+
+            if (character->getAlive()) {
+                handleAlivePlayer(world, physicsSystem, bodyInterface, playerEntity, cameraEntity, character);
+            } else {
+                handleDeadPlayer(playerEntity);
+            }
+        }
+
+    private:
+        // ==================== Entity Finding ====================
+        
+        std::pair<CharacterComponent*, CameraComponent*> findPlayerAndCamera(World* world) {
             CharacterComponent* character = nullptr;
             CameraComponent* camera = nullptr;
-            for(auto entity : world->getEntities()){
-                if(!character)
-                {
-                    if(entity->name != "enemy")
-                        character = entity->getComponent<CharacterComponent>();
+            
+            for (auto entity : world->getEntities()) {
+                if (!character && entity->name != "enemy") {
+                    character = entity->getComponent<CharacterComponent>();
                 }
-                if(!camera)
+                if (!camera) {
                     camera = entity->getComponent<CameraComponent>();
-                if(camera && character) break;
-             }
-            Entity* entity = character->getOwner();
-            // We get a reference to the entity's position and rotation
-            glm::vec3& position = entity->localTransform.position;
-            glm::vec3& rotation = entity->localTransform.rotation;
-            Entity* cameraEntity = camera->getOwner();
+                }
+                if (character && camera) break;
+            }
+            return {character, camera};
+        }
 
-            // We get the character model matrix (relative to its parent) to compute the front, up and right directions
-            Transform  characterTransform = entity->localTransform;
+        Entity* findActiveWeapon(Entity* playerEntity, InventoryComponent* inventory) {
+            if (!inventory || inventory->slots[inventory->activeSlot].empty()) return nullptr;
+            
+            const std::string& weaponName = inventory->slots[inventory->activeSlot][0];
+            for (Entity* child : playerEntity->children) {
+                if (!child->name.empty() && child->name == weaponName) {
+                    return child;
+                }
+            }
+            return nullptr;
+        }
+
+        std::string getActiveWeaponName(InventoryComponent* inventory) {
+            if (!inventory || inventory->slots[inventory->activeSlot].empty()) return "";
+            return inventory->slots[inventory->activeSlot][0];
+        }
+
+        // ==================== Movement ====================
+        
+        struct MovementVectors {
+            glm::vec3 front, up, right;
+        };
+
+        MovementVectors calculateMovementVectors(Entity* playerEntity, Entity* cameraEntity) {
+            Transform characterTransform = playerEntity->localTransform;
             characterTransform.rotation.y = cameraEntity->localTransform.rotation.y;
             glm::mat4 matrix = characterTransform.toMat4();
 
-            glm::vec3 front = glm::vec3(matrix * glm::vec4(0, 0, -1, 0)),
-                      up = glm::vec3(matrix * glm::vec4(0, 1, 0, 0)), 
-                      right = glm::vec3(matrix * glm::vec4(1, 0, 0, 0));
+            return {
+                glm::vec3(matrix * glm::vec4(0, 0, -1, 0)),  // front
+                glm::vec3(matrix * glm::vec4(0, 1, 0, 0)),   // up
+                glm::vec3(matrix * glm::vec4(1, 0, 0, 0))    // right
+            };
+        }
 
-            glm::vec3 current_sensitivity = {-30.0f, -30.0f, -30.0f};
-            // If the LEFT SHIFT key is pressed, we multiply the position sensitivity by the speed up factor
-            if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) current_sensitivity *= 5;
+        glm::vec3 getInputDirection(const MovementVectors& mv) {
+            glm::vec3 direction(0.0f);
+            if (app->getKeyboard().isPressed(GLFW_KEY_W)) direction += mv.front;
+            if (app->getKeyboard().isPressed(GLFW_KEY_S)) direction -= mv.front;
+            if (app->getKeyboard().isPressed(GLFW_KEY_D)) direction += mv.right;
+            if (app->getKeyboard().isPressed(GLFW_KEY_A)) direction -= mv.right;
+            if (app->getKeyboard().isPressed(GLFW_KEY_Q)) direction += mv.up;
+            if (app->getKeyboard().isPressed(GLFW_KEY_E)) direction -= mv.up;
+            return direction;
+        }
 
+        bool isMoving() {
+            return app->getKeyboard().isPressed(GLFW_KEY_W) ||
+                   app->getKeyboard().isPressed(GLFW_KEY_S) ||
+                   app->getKeyboard().isPressed(GLFW_KEY_A) ||
+                   app->getKeyboard().isPressed(GLFW_KEY_D);
+        }
 
-            glm::vec3 new_Direction = glm::vec3(0.0f, 0.0f, 0.0f);
-            // We change the character position based on the keys WASD/QE
-            // S & W moves the player back and forth
-            if (character->getAlive()){
-                if(app->getKeyboard().isPressed(GLFW_KEY_W))
-                {
-                    new_Direction += front;
-                } 
-                if(app->getKeyboard().isPressed(GLFW_KEY_S))
-                {
-                    new_Direction -= front;
-                } 
-                // Q & E moves the player up and down
-                if(app->getKeyboard().isPressed(GLFW_KEY_Q))
-                {
-                    new_Direction += up;
-                } 
-                if(app->getKeyboard().isPressed(GLFW_KEY_E))
-                {
-                    new_Direction -= up;
-                } 
-                if(app->getKeyboard().isPressed(GLFW_KEY_D))
-                {
-                    new_Direction += right;
-                } 
-                if(app->getKeyboard().isPressed(GLFW_KEY_A))
-                {
-                    new_Direction -= right;
-                } 
+        bool isSprinting() {
+            return app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT);
+        }
 
-                auto rb = entity->getComponent<RigidBodyComponent>();
-                // Get animator component and switch animations based on state
-                auto animator = entity->getComponent<AnimatorComponent>();
-                auto inventory = entity->getComponent<InventoryComponent>();
+        void applyMovement(JPH::BodyInterface* bodyInterface, RigidBodyComponent* rb, const glm::vec3& direction) {
+            float speed = BASE_SPEED * (isSprinting() ? SPRINT_MULTIPLIER : 1.0f);
+            JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
+            JPH::Vec3 newVel(direction.x * speed, currentVel.GetY(), direction.z * speed);
+            bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
+        }
 
-                JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
-
-                float speed = 20.0f;
-
-                if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) speed *= 5;
-        
-                JPH::Vec3 newVel(
-                    new_Direction.x * speed, 
-                    currentVel.GetY(), // gravity
-                    new_Direction.z * speed
-                );
-
-                bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
-
-
-                if (app->getMouse().isPressed(GLFW_MOUSE_BUTTON_2)) {
-                    rotation.y = cameraEntity->localTransform.rotation.y + glm::pi<float>();
-                }
-                else if(glm::length(new_Direction) > 0) 
-
-                {
-                    new_Direction = glm::normalize(new_Direction);
-                    float targetAngle = glm::atan(new_Direction.x, new_Direction.z);
-
-                rotation.y = targetAngle; 
+        void updateRotation(Entity* playerEntity, Entity* cameraEntity, const glm::vec3& direction) {
+            glm::vec3& rotation = playerEntity->localTransform.rotation;
+            if (app->getMouse().isPressed(GLFW_MOUSE_BUTTON_2)) {
+                rotation.y = cameraEntity->localTransform.rotation.y + glm::pi<float>();
+            } else if (glm::length(direction) > 0) {
+                glm::vec3 normalized = glm::normalize(direction);
+                rotation.y = glm::atan(normalized.x, normalized.z);
             }
-            
-            LayerFilter myFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
-            RaycastHit hit =  physicsSystem->Raycast(entity->getLocalToWorldMatrix()[3], -1.0f * up, 1 / glm::length(entity->getLocalToWorldMatrix()[1]), myFilter);
-            //float vert_vel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY() ;
+        }
 
-            if(app->getKeyboard().justPressed(GLFW_KEY_SPACE) && hit.hasHit){// && vert_vel < 1e-3 && vert_vel > -1e-3) {
+        void handleJump(PhysicsSystem* physicsSystem, JPH::BodyInterface* bodyInterface,
+                       Entity* playerEntity, RigidBodyComponent* rb, const glm::vec3& up) {
+            if (!app->getKeyboard().justPressed(GLFW_KEY_SPACE)) return;
+
+            LayerFilter groundFilter({Layers::PLAYER, Layers::PLAYER_ATTACK});
+            float rayLength = 1.0f / glm::length(playerEntity->getLocalToWorldMatrix()[1]);
+            RaycastHit hit = physicsSystem->Raycast(playerEntity->getLocalToWorldMatrix()[3], -up, rayLength, groundFilter);
+            
+            if (hit.hasHit) {
                 std::cout << "Jump!" << std::endl;
-                JPH::Vec3 jumpImpulse = JPH::Vec3(0, 5.0f, 0);
-                bodyInterface->AddImpulse(rb->runtimeBodyID, jumpImpulse);
+                bodyInterface->AddImpulse(rb->runtimeBodyID, JPH::Vec3(0, JUMP_FORCE, 0));
             }
+        }
 
-                Entity* weapon = NULL;
-                for(Entity* child : entity->children)
-                {
-                    if (inventory->slots[inventory->activeSlot].empty()) continue;
-                    if(child->name == inventory->slots[inventory->activeSlot][0])
-                    {
-                        if(child->name == "") continue;
-                        weapon = child;
-                        break;
-                    }
-                }
+        // ==================== Combat ====================
+        
+        void handleShooting(World* world, Entity* playerEntity, Entity* cameraEntity, Entity* weapon) {
+            if (!app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1) || !weapon) return;
 
-                if(app->getMouse().justPressed(GLFW_MOUSE_BUTTON_1)) {
-                    if(!weapon) return;
-                    //std::cout << "Spawning Object!" << std::endl;
-                    glm::vec3 shot_dir = glm::normalize(glm::vec3(entity->getLocalToWorldMatrix() * glm::vec4(0, 0, 1, 0)));
-                    glm::vec3 shot_height = glm::normalize(glm::vec3(cameraEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0)));
-                    JPH::Vec3 forwardImpulse = JPH::Vec3(shot_dir.x, shot_height.y, shot_dir.z) * 100.0f;
-                    ObjectSpawner::spawnObject(
-                        world,
-                        nullptr,
-                        object_data,
-                        glm::vec3(weapon->getLocalToWorldMatrix()[3]),
-                        glm::vec3(0.0f),
-                        glm::vec3(0.1f),
-                        forwardImpulse,
-                        10.0f,
-                        "player_attack"
-                    );
-                }
-                          // Control walking animation based on movement
-            bool isWalking = app->getKeyboard().isPressed(GLFW_KEY_W) || 
-                             app->getKeyboard().isPressed(GLFW_KEY_S) ||
-                             app->getKeyboard().isPressed(GLFW_KEY_A) ||
-                             app->getKeyboard().isPressed(GLFW_KEY_D);
+            glm::vec3 shotDir = glm::normalize(glm::vec3(playerEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, 1, 0)));
+            glm::vec3 shotHeight = glm::normalize(glm::vec3(cameraEntity->getLocalToWorldMatrix() * glm::vec4(0, 0, -1, 0)));
+            JPH::Vec3 impulse = JPH::Vec3(shotDir.x, shotHeight.y, shotDir.z) * BULLET_SPEED;
             
+            ObjectSpawner::spawnObject(
+                world, nullptr, object_data,
+                glm::vec3(weapon->getLocalToWorldMatrix()[3]),
+                glm::vec3(0, 0, 0), glm::vec3(0.02f),
+                impulse, 10.0f, "player_attack"
+            );
+        }
 
+        void handleHealing(Entity* playerEntity, CharacterComponent* character) {
+            if (!app->getKeyboard().justPressed(GLFW_KEY_H)) return;
 
-            bool isAttacking = app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1);
-            static bool leftAttackPressed = false;
-            
-            if (animator && animator->enabled) {
-                // Check if attack animation has finished
-                if (isPlayingAttackAnimation) {
-                    if (animator->isAnimationFinished()) {
-                        isPlayingAttackAnimation = false;
-                        // Reset to allow state machine to pick next animation
-                    }
-                }
-                
-                // Don't interrupt attack animations until they finish
-                if (isPlayingAttackAnimation && !animator->isAnimationFinished()) {
-                    // Let attack animation continue playing
-                }
-                else if (isAttacking) {
-                    // Switch to attack animation if available
-                    if (inventory->slots[inventory->activeSlot].empty()) {
-                        if (animator->hasAnimation("attack")) {
-                            animator->setAnimation("attack");
-                            animator->play();
-                            isPlayingAttackAnimation = true;
-                        }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_gun") {
-                        if (animator->hasAnimation("GunAttack")) {
-                            animator->setAnimation("GunAttack");
-                            animator->play();
-                            isPlayingAttackAnimation = true;
-                        }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_katana") {
-                        if (!leftAttackPressed && animator->hasAnimation("KatanaSlashL")) {
-                            animator->setAnimation("KatanaSlashL");
-                            animator->play();
-                            isPlayingAttackAnimation = true;
-                            leftAttackPressed = true;
-                        }
-                        else if (leftAttackPressed && animator->hasAnimation("KatanaSlashR")) {
-                            animator->setAnimation("KatanaSlashR");
-                            animator->play();
-                            isPlayingAttackAnimation = true;
-                            leftAttackPressed = false;
-                        }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
-                        if (animator->hasAnimation("RifleShoot")) {
-                            animator->setAnimation("RifleShoot");
-                            animator->play();
-                            isPlayingAttackAnimation = true;
-                        }
-                    }
-                }
-                else if (isWalking) {
-                    // Switch to walk animation if available
-                    // if inventory active slots does not contain weapons use walk animation
-                    if (inventory->slots[inventory->activeSlot].empty()) {  
-                        if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
-                            if (animator->hasAnimation("run") && animator->getCurrentAnimationName() != "run") {
-                                animator->setAnimation("run");
-                                animator->play();
-                            }
-                        }
-                        else  {
-                            if (animator->hasAnimation("walk") && animator->getCurrentAnimationName() != "walk") {
-                            animator->setAnimation("walk");
-                            animator->play();
-                            }
-                        } 
-                    }
-                    else if (inventory->slots[inventory->activeSlot][0] == "player_gun"){
-                        if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
-                            if (animator->hasAnimation("GunRun") && animator->getCurrentAnimationName() != "GunRun"){
-                                animator->setAnimation("GunRun");
-                                animator->play();
-                            }
-                        }
-                        else {
-                            if (animator->hasAnimation("GunWalk") && animator->getCurrentAnimationName() != "GunWalk"){
-                                animator->setAnimation("GunWalk");
-                                animator->play();
-                            }
-                        }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_katana"){
-                        if(app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
-                            if (animator->hasAnimation("KatanaRun") && animator->getCurrentAnimationName() != "KatanaRun"){
-                                animator->setAnimation("KatanaRun");
-                                animator->play();
-                            }
-                        }
-                        else {
-                            if (animator->hasAnimation("KatanaWalk") && animator->getCurrentAnimationName() != "KatanaWalk"){
-                                animator->setAnimation("KatanaWalk");
-                                animator->play();
-                            }
-                        }
-                    }
-                    else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
-                        if (app->getKeyboard().isPressed(GLFW_KEY_LEFT_SHIFT)) {
-                            if (animator->hasAnimation("RifleRun") && animator->getCurrentAnimationName() != "RifleRun") {
-                                animator->setAnimation("RifleRun");
-                                animator->play();
-                            }
-                        }
-                        else {
-                            if (animator->hasAnimation("RifleWalk") && animator->getCurrentAnimationName() != "RifleWalk") {
-                                animator->setAnimation("RifleWalk");
-                                animator->play();
-                            }
-                        }
-                    }
-                } else {
-                    // Switch to idle animation if available
-                    if(inventory->slots[inventory->activeSlot].empty()) {
-                        if (animator->hasAnimation("idle") && animator->getCurrentAnimationName() != "idle") {
-                            animator->setAnimation("idle");
-                            animator->play();
-                        }                        
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_gun") {
-                        if (animator->hasAnimation("GunIdle") && animator->getCurrentAnimationName() != "GunIdle") {
-                            animator->setAnimation("GunIdle");
-                            animator->play();
-                        }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_katana") {
-                        if (animator->hasAnimation("KatanaIdle") && animator->getCurrentAnimationName() != "KatanaIdle") {
-                            animator->setAnimation("KatanaIdle");
-                            animator->play();
-                        }
-                    } else if (inventory->slots[inventory->activeSlot][0] == "player_rifle") {
-                        if (animator->hasAnimation("RifleIdle") && animator->getCurrentAnimationName() != "RifleIdle") {
-                            animator->setAnimation("RifleIdle");
-                            animator->play();
-                        }
-                    }
-                }
+            if (character->getHealth() >= 100) {
+                std::cout << "Health is already full." << std::endl;
+            } else if (healCounter >= MAX_HEALS) {
+                std::cout << "Heal limit reached. Cannot heal more than " << MAX_HEALS << " times." << std::endl;
+            } else {
+                HealCharacter(playerEntity, HEAL_AMOUNT);
+                healCounter++;
             }
-            wasWalking = isWalking;     
+        }
+
+        // ==================== Animation ====================
+        
+        void tryPlayAnimation(AnimatorComponent* animator, const std::string& animName) {
+            if (animator->hasAnimation(animName) && animator->getCurrentAnimationName() != animName) {
+                animator->setAnimation(animName);
+                animator->play();
             }
-            else {
-                auto animator = entity->getComponent<AnimatorComponent>();
-                if (animator && animator->enabled) {
-                    if (animator->isAnimationFinished()){
-                        animator->stop();
-                        // draw a wasted screen 
-                        app->changeState("dead");
-                    } 
+        }
+
+        void handleAttackAnimation(AnimatorComponent* animator, const std::string& weaponName) {
+            if (weaponName.empty()) {
+                if (animator->hasAnimation("attack")) {
+                    animator->setAnimation("attack");
+                    animator->play();
+                    isPlayingAttackAnimation = true;
+                }
+            } else if (weaponName == "player_gun") {
+                if (animator->hasAnimation("GunAttack")) {
+                    animator->setAnimation("GunAttack");
+                    animator->play();
+                    isPlayingAttackAnimation = true;
+                }
+            } else if (weaponName == "player_katana") {
+                const char* anim = leftAttackPressed ? "KatanaSlashR" : "KatanaSlashL";
+                if (animator->hasAnimation(anim)) {
+                    animator->setAnimation(anim);
+                    animator->play();
+                    isPlayingAttackAnimation = true;
+                    leftAttackPressed = !leftAttackPressed;
+                }
+            } else if (weaponName == "player_rifle") {
+                if (animator->hasAnimation("RifleShoot")) {
+                    animator->setAnimation("RifleShoot");
+                    animator->play();
+                    isPlayingAttackAnimation = true;
                 }
             }
         }
+
+        void handleMovementAnimation(AnimatorComponent* animator, const std::string& weaponName) {
+            bool sprinting = isSprinting();
+            if (weaponName.empty()) {
+                tryPlayAnimation(animator, sprinting ? "run" : "walk");
+            } else if (weaponName == "player_gun") {
+                tryPlayAnimation(animator, sprinting ? "GunRun" : "GunWalk");
+            } else if (weaponName == "player_katana") {
+                tryPlayAnimation(animator, sprinting ? "KatanaRun" : "KatanaWalk");
+            } else if (weaponName == "player_rifle") {
+                tryPlayAnimation(animator, sprinting ? "RifleRun" : "RifleWalk");
+            }
+        }
+
+        void handleIdleAnimation(AnimatorComponent* animator, const std::string& weaponName) {
+            if (weaponName.empty()) {
+                tryPlayAnimation(animator, "idle");
+            } else if (weaponName == "player_gun") {
+                tryPlayAnimation(animator, "GunIdle");
+            } else if (weaponName == "player_katana") {
+                tryPlayAnimation(animator, "KatanaIdle");
+            } else if (weaponName == "player_rifle") {
+                tryPlayAnimation(animator, "RifleIdle");
+            }
+        }
+
+        void updateAnimations(AnimatorComponent* animator, InventoryComponent* inventory) {
+            if (!animator || !animator->enabled) return;
+
+            std::string weaponName = getActiveWeaponName(inventory);
+            bool walking = isMoving();
+            bool attacking = app->getMouse().isPressed(GLFW_MOUSE_BUTTON_1);
+
+            // Check if attack animation finished
+            if (isPlayingAttackAnimation && animator->isAnimationFinished()) {
+                isPlayingAttackAnimation = false;
+            }
+
+            // Don't interrupt attack animations
+            if (isPlayingAttackAnimation && !animator->isAnimationFinished()) {
+                return;
+            }
+
+            // Priority: Attack > Walk > Idle
+            if (attacking) {
+                handleAttackAnimation(animator, weaponName);
+            } else if (walking) {
+                handleMovementAnimation(animator, weaponName);
+            } else {
+                handleIdleAnimation(animator, weaponName);
+            }
+
+            wasWalking = walking;
+        }
+
+        // ==================== Main Update Handlers ====================
+        
+        void handleAlivePlayer(World* world, PhysicsSystem* physicsSystem, JPH::BodyInterface* bodyInterface,
+                              Entity* playerEntity, Entity* cameraEntity, CharacterComponent* character) {
+            auto rb = playerEntity->getComponent<RigidBodyComponent>();
+            auto animator = playerEntity->getComponent<AnimatorComponent>();
+            auto inventory = playerEntity->getComponent<InventoryComponent>();
+
+            // Calculate movement
+            MovementVectors mv = calculateMovementVectors(playerEntity, cameraEntity);
+            glm::vec3 inputDir = getInputDirection(mv);
+
+            // Apply movement and rotation
+            applyMovement(bodyInterface, rb, inputDir);
+            updateRotation(playerEntity, cameraEntity, inputDir);
+
+            // Handle actions
+            handleJump(physicsSystem, bodyInterface, playerEntity, rb, mv.up);
+            handleHealing(playerEntity, character);
+
+            // Handle combat
+            Entity* weapon = findActiveWeapon(playerEntity, inventory);
+            handleShooting(world, playerEntity, cameraEntity, weapon);
+
+            // Update animations
+            updateAnimations(animator, inventory);
+        }
+
+        void handleDeadPlayer(Entity* playerEntity) {
+            auto animator = playerEntity->getComponent<AnimatorComponent>();
+            if (animator && animator->enabled && animator->isAnimationFinished()) {
+                animator->stop();
+                app->changeState("dead");
+            }
+        }
+
+    public:
 
         static void onCollision(Entity* self, Entity* other) {
             if(other->layer == "enemy_attack") 
@@ -376,7 +377,19 @@ namespace our
                 }
             }
         }
-            
+
+        static void HealCharacter (Entity* self, int amount) {
+            CharacterComponent* character = self->getComponent<CharacterComponent>();
+            if (character->getAlive()) {
+                if (character->getHealth() + amount > 100) {
+                    character->setHealth(100 - character->getHealth()); // Cap health at 100
+                }
+                else {
+                    character->setHealth(amount);
+                }
+                std::cout << "Character Healed. Current Health: " << character->getHealth() << std::endl;
+            }
+        }   
         // When the state exits, it should call this function to ensure the mouse is unlocked
         void exit(){}
     };

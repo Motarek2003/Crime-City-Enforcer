@@ -42,7 +42,8 @@
         "Rifle": "assets/textures/Rifle.png",
         "city": "assets/textures/baked4K.png",
         "taskmaster": "assets/textures/TaskMaster.png",
-        "shield": "assets/textures/shield.png"
+        "shield": "assets/textures/shield.png",
+        "bullet": "assets/textures/monkey.png"
       },
       "meshes": {
         "cube": "assets/models/cube.obj",
@@ -56,7 +57,8 @@
         "Rifle": "assets/models/Rifle.obj",
         "city": "assets/models/cityBaked.fbx",
         "taskmaster": "assets/models/TaskMaster.fbx",
-        "shield": "assets/models/shield.fbx"
+        "shield": "assets/models/shield.fbx",
+        "bullet": "assets/models/bullet.obj"
       },
       "samplers": {
         "default": {},
@@ -119,6 +121,24 @@
           "albedo": "gun",
           "sampler": "pixelated"
         },
+        "bullet": {
+          "type": "lit",
+          "shader": "lit",
+          "pipelineState": {
+            "faceCulling": {
+              "enabled": false
+            },
+            "depthTesting": {
+              "enabled": true
+            }
+          },
+          "tint": [1, 1, 1, 1],
+          "diffuse": [1, 1, 1],
+          "specular_color": [1, 1, 1],
+          "ambient": [1, 1, 1],
+          "albedo": "bullet",
+          "sampler": "pixelated"
+        },
         "katana": {
           "type": "lit",
           "shader": "lit",
@@ -154,65 +174,6 @@
           "ambient": [1, 1, 1],
           "albedo": "Rifle",
           "sampler": "pixelated"
-        },
-        "metal": {
-          "type": "lit",
-          "shader": "lit",
-          "pipelineState": {
-            "faceCulling": {
-              "enabled": false
-            },
-            "depthTesting": {
-              "enabled": true
-            }
-          },
-          "tint": [0.45, 0.4, 0.5, 1],
-          "diffuse": [1, 1, 1],
-          "specular_color": [1, 1, 1],
-          "ambient": [1, 1, 1]
-        },
-        "glass": {
-          "type": "lit",
-          "shader": "lit",
-          "pipelineState": {
-            "faceCulling": {
-              "enabled": false
-            },
-            "depthTesting": {
-              "enabled": true
-            },
-            "blending": {
-              "enabled": true,
-              "sourceFactor": "GL_SRC_ALPHA",
-              "destinationFactor": "GL_ONE_MINUS_SRC_ALPHA"
-            },
-            "depthMask": false
-          },
-          "transparent": true,
-          "tint": [1, 1, 1, 1],
-          "diffuse": [1, 1, 1],
-          "specular_color": [1, 1, 1],
-          "ambient": [1, 1, 1],
-          "albedo": "glass",
-          "sampler": "pixelated"
-        },
-        "grass": {
-          "type": "lit",
-          "shader": "lit",
-          "pipelineState": {
-            "faceCulling": {
-              "enabled": false
-            },
-            "depthTesting": {
-              "enabled": true
-            }
-          },
-          "tint": [1, 1, 1, 1],
-          "diffuse": [1, 1, 1],
-          "specular_color": [1, 1, 1],
-          "ambient": [1, 1, 1],
-          "albedo": "grass",
-          "sampler": "default"
         },
         "city": {
           "type": "lit",
@@ -267,42 +228,6 @@
           "ambient": [1, 1, 1],
           "albedo": "shield",
           "sampler": "default"
-        },
-        "monkey": {
-          "type": "lit",
-          "shader": "lit",
-          "pipelineState": {
-            "faceCulling": {
-              "enabled": false
-            },
-            "depthTesting": {
-              "enabled": true
-            }
-          },
-          "tint": [1, 1, 1, 1],
-          "diffuse": [1, 1, 1],
-          "specular_color": [1, 1, 1],
-          "ambient": [1, 1, 1],
-          "albedo": "monkey",
-          "sampler": "default"
-        },
-        "moon": {
-          "type": "lit",
-          "shader": "lit",
-          "pipelineState": {
-            "faceCulling": {
-              "enabled": false
-            },
-            "depthTesting": {
-              "enabled": true
-            }
-          },
-          "tint": [1, 1, 1, 1],
-          "diffuse": [1, 1, 1],
-          "specular_color": [1, 1, 1],
-          "ambient": [1, 1, 1],
-          "albedo": "moon",
-          "sampler": "default"
         }
       }
     },
@@ -316,12 +241,14 @@
           { "type": "Free Camera Controller" }
         ]
       },
+
+      // ---- PLAYER ----
       {
         "name": "deadpool",
         "layer": "player",
         "scale": [0.025, 0.025, 0.025],
         "rotation": [0, 180, 0],
-        "position": [0, 1, 8],
+        "position": [-100, 1, 108],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -384,6 +311,7 @@
           }
         ],
         "children": [
+          // ---- PLAYER WEAPONS ----
           {
             "name": "player_gun",
             "scale": [2, 2, 2],
@@ -584,12 +512,14 @@
           }
         ]
       },
+
+      // ---- ENEMIES ----
       {
         "name": "enemy",
         "layer": "enemy",
         "scale": [0.01, 0.01, 0.01],
-        "rotation": [0, 180, 0],
-        "position": [0, 1, -4],
+        "rotation": [0, 90, 0],
+        "position": [-20, 1, 20],
         "components": [
           {
             "type": "Mesh Renderer",
@@ -612,14 +542,411 @@
           {
             "type": "Character",
             "path": [
-              [-4, 0, -4],
-              [-4, 0, 4],
-              [4, 0, 4],
-              [4, 0, -4]
+              [-25, 0, 20],
+              [-20, 0, 20],
+              [-20, 0, 15],
+              [-25, 0, 15]
             ]
           }
         ]
       },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 270, 0],
+        "position": [30, 1, 15],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [30, 0, 15],
+              [30, 0, 10],
+              [25, 0, 10],
+              [25, 0, 15]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 180, 0],
+        "position": [8, 1, 66],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [8, 0, 66],
+              [6, 0, 68],
+              [8, 0, 70],
+              [10, 0, 68]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 45, 0],
+        "position": [5, 1, 73],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [5, 0, 73],
+              [3, 0, 75],
+              [5, 0, 77],
+              [7, 0, 75]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 270, 0],
+        "position": [3, 1, 80],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [3, 0, 80],
+              [2, 0, 82],
+              [3, 0, 84],
+              [4, 0, 82]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 135, 0],
+        "position": [0.5, 1, 89],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [0.5, 0, 89],
+              [-1, 0, 91],
+              [0.5, 0, 93],
+              [2, 0, 91]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 90, 0],
+        "position": [-5, 1, 95],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-5, 0, 95],
+              [-7, 0, 96],
+              [-5, 0, 97],
+              [-3, 0, 96]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 180, 0],
+        "position": [-12, 1, 96.5],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-12, 0, 96.5],
+              [-14, 0, 97],
+              [-12, 0, 97.5],
+              [-10, 0, 97]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 225, 0],
+        "position": [-18, 1, 96],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-18, 0, 96],
+              [-20, 0, 96],
+              [-20, 0, 94],
+              [-18, 0, 94]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 0, 0],
+        "position": [-23, 1, 93],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-23, 0, 93],
+              [-25, 0, 94],
+              [-25, 0, 92],
+              [-23, 0, 91]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 315, 0],
+        "position": [-28, 1, 90],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-28, 0, 90],
+              [-30, 0, 91],
+              [-30, 0, 89],
+              [-28, 0, 88]
+            ]
+          }
+        ]
+      },
+      {
+        "name": "enemy",
+        "layer": "enemy",
+        "scale": [0.01, 0.01, 0.01],
+        "rotation": [0, 90, 0],
+        "position": [-31, 1, 87],
+        "components": [
+          {
+            "type": "Mesh Renderer",
+            "mesh": "character",
+            "material": "character"
+          },
+          {
+            "type": "Rigid Body",
+            "bodyType": "Dynamic",
+            "mass": 1.0,
+            "useGravity": true
+          },
+          {
+            "type": "Collider",
+            "shape": "Capsule",
+            "size": [50, 50, 50],
+            "offset": [0, 100, 0],
+            "isTrigger": false
+          },
+          {
+            "type": "Character",
+            "path": [
+              [-31, 0, 87],
+              [-32, 0, 88],
+              [-31, 0, 89],
+              [-30, 0, 88]
+            ]
+          }
+        ]
+      },
+      // ---- TASKMASTER ----
       {
         "name": "taskmaster",
         "layer": "enemy",
@@ -656,7 +983,8 @@
           },
           {
             "type": "Animator",
-            "mesh": "assets/models/TaskMaster.fbx",
+            // Use the Idle animation FBX as mesh source - it contains the rigged Mixamo character
+            "mesh": "assets/animations/TaskMaster/TaskMaster@Idle.fbx",
             "animations": {
               "idle": "assets/animations/TaskMaster/TaskMaster@Idle.fbx",
               "walk": "assets/animations/TaskMaster/TaskMaster@Walk.fbx",
@@ -688,177 +1016,28 @@
             ]
           },
           {
-            "layer": "enemy_awareness", 
-            "position": [0, 100, 0], 
+            "layer": "enemy_awareness",
+            "position": [0, 100, 0],
             "rotation": [0, 0, 0],
             "scale": [1, 1, 1],
             "components": [
               {
-                  
-                  "type": "Collider",
-                  "shape": "Sphere",
-                  "size": [100, 100, 100], 
-                  "isTrigger": true
+                "type": "Collider",
+                "shape": "Sphere",
+                "size": [100, 100, 100],
+                "isTrigger": true
               },
               {
-                  "type": "Rigid Body",
-                  "bodyType": "Kinematic", 
-                  "useGravity": false
+                "type": "Rigid Body",
+                "bodyType": "Kinematic",
+                "useGravity": false
               }
             ]
           }
         ]
       },
-      {
-        "position": [0, -1, 0],
-        "rotation": [-90, 0, 0],
-        "scale": [10, 10, 1],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "plane",
-            "material": "grass"
-          },
-          {
-            "type": "Collider",
-            "shape": "Box",
-            "size": [1, 1, 1],
-            "offset": [0, 0, -1],
-            "isTrigger": false
-          },
-          {
-            "type": "Rigid Body",
-            "bodyType": "Static"
-          }
-        ]
-      },
-      {
-        "position": [0, 1, 2],
-        "rotation": [0, 0, 0],
-        "scale": [2, 2, 2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "plane",
-            "material": "glass"
-          },
-          {
-            "type": "Collider",
-            "shape": "Box",
-            "size": [1, 1, 0.1],
-            "isTrigger": true
-          },
-          {
-            "type": "Rigid Body",
-            "bodyType": "Static"
-          }
-        ]
-      },
-      {
-        "position": [0, 1, -2],
-        "rotation": [0, 0, 0],
-        "scale": [2, 2, 2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "plane",
-            "material": "glass"
-          },
-          {
-            "type": "Collider",
-            "shape": "Box",
-            "size": [1, 1, 0.1],
-            "isTrigger": false
-          },
-          {
-            "type": "Rigid Body",
-            "bodyType": "Static"
-          }
-        ]
-      },
-      {
-        "position": [2, 1, 0],
-        "rotation": [0, 90, 0],
-        "scale": [2, 2, 2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "plane",
-            "material": "glass"
-          },
-          {
-            "type": "Collider",
-            "shape": "Box",
-            "size": [1, 1, 0.1],
-            "isTrigger": false
-          },
-          {
-            "type": "Rigid Body",
-            "bodyType": "Static"
-          }
-        ]
-      },
-      {
-        "position": [-2, 1, 0],
-        "rotation": [0, 90, 0],
-        "scale": [2, 2, 2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "plane",
-            "material": "glass"
-          },
-          {
-            "type": "Collider",
-            "shape": "Box",
-            "size": [1, 1, 0.1],
-            "isTrigger": false
-          },
-          {
-            "type": "Rigid Body",
-            "bodyType": "Static"
-          }
-        ]
-      },
-      {
-        "position": [0, 3, 0],
-        "rotation": [90, 0, 0],
-        "scale": [2, 2, 2],
-        "components": [
-          {
-            "type": "Mesh Renderer",
-            "mesh": "plane",
-            "material": "glass"
-          },
-          {
-            "type": "Collider",
-            "shape": "Box",
-            "size": [1, 1, 0.1],
-            "isTrigger": false
-          },
-          {
-            "type": "Rigid Body",
-            "bodyType": "Static"
-          }
-        ]
-      },
-      // {
-      //   "position": [0, 10, 0],
-      //   "rotation": [45, 45, 0],
-      //   "scale": [5, 5, 5],
-      //   "components": [
-      //     {
-      //       "type": "Mesh Renderer",
-      //       "mesh": "sphere",
-      //       "material": "moon"
-      //     },
-      //     {
-      //       "type": "Movement",
-      //       "angularVelocity": [0, 90, 0]
-      //     }
-      //   ]
-      // },
 
+      // ---- MAP ----
       {
         "name": "city",
         "position": [5, 0, 5],
@@ -882,6 +1061,8 @@
           }
         ]
       },
+
+      // ---- LIGHTS ----
       {
         "position": [-5, 100, -5],
         "rotation": [0, 0, 0],

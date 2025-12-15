@@ -1,24 +1,24 @@
 {
-"name": "bullet",
-"position": [0, 0, 0],
-"rotation": [0, 0, 0],
-"scale": [1, 1, 1],
-"components": [
+  "name": "bullet",
+  "position": [0, 0, 0],
+  "rotation": [0, 0, 0],
+  "scale": [1, 1, 1],
+  "components": [
     {
-    "type": "Mesh Renderer",
-    "mesh": "sphere",
-    "material": "glass"
+      "type": "Mesh Renderer",
+      "mesh": "bullet",
+      "material": "bullet"
     },
     {
-    "type": "Collider",
-    "shape": "Sphere",
-    "size": [1, 1, 1],
-    "offset": [0, 0, 0],
-    "isTrigger": true
+      "type": "Collider",
+      "shape": "Sphere",
+      "size": [1, 1, 1],
+      "offset": [0, 0, 0],
+      "isTrigger": true
     },
     {
-    "type": "Rigid Body",
-    "bodyType": "Dynamic"
+      "type": "Rigid Body",
+      "bodyType": "Dynamic"
     }
-]
+  ]
 }

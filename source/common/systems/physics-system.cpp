@@ -28,29 +28,19 @@ namespace our {
 
     our::PhysicsSystem* our::PhysicsSystem::instance = nullptr;
 
-    namespace BPLayers {
-        static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
-        static constexpr JPH::BroadPhaseLayer MOVING(1);
-        static constexpr JPH::uint NUM_LAYERS(2);
-    };
-
     // Class that determines if an object layer can collide with a broadphase layer
     class PhysicsSystem::ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
             switch (inLayer1) {
-            case Layers::NON_MOVING: 
-            case Layers::ENEMY_AWARENESS:
-                return inLayer2 == BPLayers::MOVING;
-
-            case Layers::PLAYER:
-            case Layers::ENEMY:
-            case Layers::PLAYER_ATTACK:
-            case Layers::ENEMY_ATTACK:
-                return true; 
-                
-            default: return false;
+                case Layers::NON_MOVING: return inLayer2 != JPH::BroadPhaseLayer(Layers::NON_MOVING);
+                case Layers::PLAYER: return inLayer2 != JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK);
+                case Layers::PLAYER_ATTACK: return (inLayer2 == JPH::BroadPhaseLayer(Layers::ENEMY) || inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING));
+                case Layers::ENEMY: return inLayer2 != JPH::BroadPhaseLayer(Layers::ENEMY_ATTACK);
+                case Layers::ENEMY_ATTACK: return (inLayer2 == JPH::BroadPhaseLayer(Layers::PLAYER) || inLayer2 == JPH::BroadPhaseLayer(Layers::NON_MOVING));
+                default: return false;
             }
+            return false;
         }
     };
 
@@ -59,12 +49,11 @@ namespace our {
     public:
         virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
             switch (inObject1) {
-                case Layers::NON_MOVING: return (inObject2 != Layers::NON_MOVING && inObject2 != Layers::ENEMY_AWARENESS);
-                case Layers::PLAYER: return (inObject2 != Layers::PLAYER_ATTACK && inObject2 != Layers::ENEMY_AWARENESS); 
-                case Layers::PLAYER_ATTACK: return (inObject2 == Layers::ENEMY || inObject2 == Layers::NON_MOVING || inObject2 == Layers::ENEMY_AWARENESS);
-                case Layers::ENEMY: return (inObject2 != Layers::ENEMY_ATTACK && inObject2 != Layers::ENEMY_AWARENESS); 
+                case Layers::NON_MOVING: return inObject2 != Layers::NON_MOVING;
+                case Layers::PLAYER: return inObject2 != Layers::PLAYER_ATTACK; 
+                case Layers::PLAYER_ATTACK: return (inObject2 == Layers::ENEMY || inObject2 == Layers::NON_MOVING);
+                case Layers::ENEMY: return inObject2 != Layers::ENEMY_ATTACK; 
                 case Layers::ENEMY_ATTACK: return (inObject2 == Layers::PLAYER || inObject2 == Layers::NON_MOVING);
-                case Layers::ENEMY_AWARENESS: return inObject2 == Layers::PLAYER_ATTACK;
                 default: return false;
             }
             return false;
@@ -76,15 +65,13 @@ namespace our {
         JPH::BroadPhaseLayer mObjectToBroadPhase[Layers::NUM_LAYERS];
     public:
         BPLayerInterfaceImpl() {
-            mObjectToBroadPhase[Layers::NON_MOVING] = BPLayers::NON_MOVING;
-
-            mObjectToBroadPhase[Layers::PLAYER]        = BPLayers::MOVING;
-            mObjectToBroadPhase[Layers::PLAYER_ATTACK] = BPLayers::MOVING;
-            mObjectToBroadPhase[Layers::ENEMY]         = BPLayers::MOVING;
-            mObjectToBroadPhase[Layers::ENEMY_ATTACK]  = BPLayers::MOVING;
-            mObjectToBroadPhase[Layers::ENEMY_AWARENESS] = BPLayers::MOVING;
+            mObjectToBroadPhase[Layers::NON_MOVING] = JPH::BroadPhaseLayer(Layers::NON_MOVING);
+            mObjectToBroadPhase[Layers::PLAYER] = JPH::BroadPhaseLayer(Layers::PLAYER);
+            mObjectToBroadPhase[Layers::PLAYER_ATTACK] = JPH::BroadPhaseLayer(Layers::PLAYER_ATTACK);
+            mObjectToBroadPhase[Layers::ENEMY] = JPH::BroadPhaseLayer(Layers::ENEMY);
+            mObjectToBroadPhase[Layers::ENEMY_ATTACK] = JPH::BroadPhaseLayer(Layers::ENEMY_ATTACK);
         }
-        virtual JPH::uint GetNumBroadPhaseLayers() const override { return BPLayers::NUM_LAYERS; }
+        virtual JPH::uint GetNumBroadPhaseLayers() const override { return Layers::NUM_LAYERS; }
         virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
             return mObjectToBroadPhase[inLayer];
         }
@@ -394,8 +381,6 @@ namespace our {
                 layer = Layers::PLAYER_ATTACK;
             else if(entity->layer == "enemy_attack")
                 layer = Layers::ENEMY_ATTACK;
-            else if(entity->layer == "enemy_awareness")
-                layer = Layers::ENEMY_AWARENESS;
             else
                 layer = Layers::NON_MOVING;
 
@@ -403,14 +388,11 @@ namespace our {
             
             // Apply RigidBody properties if component exists
             if (rb) {
-                // 1. APPLY GRAVITY
-                if(isWarmingUp)
-                    rb->useGravity = false;
-                else
-                    rb->useGravity = true;
+                // APPLY GRAVITY
+                rb->useGravity = false;
                 bodySettings.mGravityFactor = rb->useGravity ? 1.0f : 0.0f;
 
-                // 2. APPLY MASS (only for Dynamic bodies)
+                // APPLY MASS (only for Dynamic bodies)
                 if (motionType == JPH::EMotionType::Dynamic) {
                     bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
                     float finalMass = rb->mass > 0.001f ? rb->mass : 1.0f;
@@ -425,8 +407,7 @@ namespace our {
             bodySettings.mUserData = (JPH::uint64)entity;
             bodySettings.mIsSensor = collider->isTrigger;
 
-            if(entity->name == "bullet")
-                bodySettings.mLinearVelocity = rb->impulseVector;
+            bodySettings.mLinearVelocity = rb->impulseVector;
 
             // Create and Add
             JPH::BodyID bodyID = bodyInterface->CreateAndAddBody(bodySettings, JPH::EActivation::Activate);
@@ -437,9 +418,8 @@ namespace our {
                 rb->runtimeBodyID = bodyID;
             }
 
-            // if(entity->name == "explosion")
-            //     bodyInterface->AddImpulse(rb->runtimeBodyID, rb->impulseVector);
-
+            // If body is supposed to spwan with movement (bullet)
+            //bodyInterface->AddImpulse(rb->runtimeBodyID, rb->impulseVector);
         }
 
         // UPDATE SIMULATION
@@ -466,20 +446,9 @@ namespace our {
             // Only sync Dynamic bodies (Static/Kinematic are controlled by transform)
             if (bodyInterface->GetMotionType(rb->runtimeBodyID) == JPH::EMotionType::Dynamic) {
                 JPH::RVec3 pos = bodyInterface->GetPosition(rb->runtimeBodyID);
+                // JPH::Quat rot = bodyInterface->GetRotation(rb->runtimeBodyID);
 
                 entity->localTransform.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
-
-            } else if (bodyInterface->GetMotionType(rb->runtimeBodyID) == JPH::EMotionType::Kinematic) {
-                
-                glm::mat4 worldMatrix = entity->getLocalToWorldMatrix();
-                
-                glm::vec3 worldPos = glm::vec3(worldMatrix[3]);
-                
-
-                JPH::RVec3 joltPos(worldPos.x, worldPos.y, worldPos.z);
-                JPH::Quat joltRot =  bodyInterface->GetRotation(rb->runtimeBodyID);
-
-                bodyInterface->MoveKinematic(rb->runtimeBodyID, joltPos, joltRot, deltaTime);
             }
         }
     }
