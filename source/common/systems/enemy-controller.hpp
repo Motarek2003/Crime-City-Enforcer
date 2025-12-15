@@ -2,265 +2,341 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
+
 #include <flags/flags.h>
 #include <json/json.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/trigonometric.hpp>
+#include <glm/gtx/fast_trigonometry.hpp>
+#include <glm/gtx/vector_angle.hpp>
+#include <Jolt/Physics/Body/BodyInterface.h>
 
+#include "../application.hpp"
 #include "../components/character.hpp"
 #include "../components/animator.hpp"
 #include "../components/rigidbody.hpp"
+#include "../ecs/world.hpp"
 #include "./physics-system.hpp"
 #include "./object-spawner.hpp"
-#include "../application.hpp"
-
-#include <glm/glm.hpp>
-#include <glm/gtx/vector_angle.hpp>
-#include <Jolt/Physics/Body/BodyInterface.h>
 
 namespace our
 {
     class EnemyControllerSystem {
-        Application* app;
-        nlohmann::json bullet;
+    private:
+        // Constants
+        static constexpr float BOSS_ATTACK_COOLDOWN = 2.0f;
+        static constexpr float GRUNT_ATTACK_COOLDOWN = 3.0f;
+        
+        static constexpr float BOSS_DETECTION_RANGE = 250.0f;
+        static constexpr float GRUNT_DETECTION_RANGE = 200.0f;
+        
+        static constexpr int BOSS_FOV = 80;
+        static constexpr int GRUNT_FOV = 60;
+        
+        static constexpr int BOSS_RAYS = 32;
+        static constexpr int GRUNT_RAYS = 12;
+        
+        static constexpr int BOSS_DAMAGE_TAKEN = 5;
+        static constexpr int GRUNT_DAMAGE_TAKEN = 10;
+        
+        static constexpr float PROJECTILE_SPEED = 100.0f;
+        static constexpr float BASE_MOVE_SPEED = 2.0f;
+
+        Application* app = nullptr;
+        nlohmann::json bullet_config;
 
         // Global Boss State
         static inline bool bossActivated = false;
 
-        const float BOSS_ATTACK_COOLDOWN = 2.0f;
-        const float GRUNT_ATTACK_COOLDOWN = 3.0f;
-
     public:
         void enter(Application* app) {
             this->app = app;
-            std::string config_path = ("config/bullet.jsonc");
-            std::ifstream file_in(config_path);
-            if (!file_in) std::cerr << "Couldn't open file: " << config_path << std::endl;
-            else bullet = nlohmann::json::parse(file_in, nullptr, true, true);
-            
+            loadConfig();
             bossActivated = false;
         }
 
-        void activateBoss() { bossActivated = true; std::cout << "BOSS ACTIVATED!" << std::endl; }
+        void activateBoss() { 
+            bossActivated = true; 
+            std::cout << "BOSS ACTIVATED!" << std::endl; 
+        }
+        
         bool isBossActivated() const { return bossActivated; }
 
         void update(World* world, float deltaTime, our::PhysicsSystem* physicsSystem) {
             JPH::BodyInterface* bodyInterface = physicsSystem->getBodyInterface();
+            if (!bodyInterface) return;
 
             for (auto entity : world->getEntities()) {
-                
                 bool isBoss = (entity->name == "taskmaster");
                 bool isGrunt = (entity->name == "enemy");
 
                 if (!isBoss && !isGrunt) continue;
 
-                auto character = entity->getComponent<CharacterComponent>();
-                auto animator = entity->getComponent<AnimatorComponent>();
-                auto rb = entity->getComponent<RigidBodyComponent>();
-
-                if (!character || !rb || rb->runtimeBodyID.IsInvalid()) continue;
-                if (!character->getAlive()) {
-                    if(isBoss) handleBossDeath(entity);
-                    continue; 
-                }
-
-                if (isBoss && !bossActivated) {
-                    setAnimation(animator, "idle");
-                    bodyInterface->SetLinearVelocity(rb->runtimeBodyID, JPH::Vec3(0, bodyInterface->GetLinearVelocity(rb->runtimeBodyID).GetY(), 0));
-                    continue;
-                }
-
-                glm::mat4 worldTransform = entity->getLocalToWorldMatrix();
-                glm::vec3 position = glm::vec3(worldTransform[3]);
-                glm::vec3 forward = glm::normalize(glm::vec3(worldTransform * glm::vec4(0, 0, 1, 0)));
-                position.y += 1.5f;
-
-                int maxAngle = isBoss ? 80 : 60; 
-                int numRays = isBoss ? 32 : 12;
-                RaycastHit hit = see(physicsSystem, position, forward, maxAngle, numRays);
-                bool playerFound = (hit.hasHit && hit.entity->layer == "player");
-
-                float stoppingDistance = 0.8f;
-                float speedUp = 1;
-                
-                if (playerFound) {
-                    character->setState(States::PURSUIT);
-                    character->updateTarget(hit.position);
-                    
-                    float dist = glm::length(position - hit.position);
-
-
-                    if (isBoss) {
-                        if (dist < 3.0f) {
-                            stoppingDistance = 2.5f;
-                            attack(world, character, animator, position, hit.position, BOSS_ATTACK_COOLDOWN, deltaTime, "enemy_attack");
-                        } 
-                        else if (dist < 8.0f) {
-                            stoppingDistance = 2.5f;
-                            setAnimation(animator, "walk");
-                            attack(world, character, animator, position, hit.position, BOSS_ATTACK_COOLDOWN, deltaTime, "enemy_attack");
-                        } 
-                        else {
-                            speedUp = 1.5;
-                            setAnimation(animator, "run");
-                        }
-                    } 
-                    else {
-                        stoppingDistance = 5.0f;
-                        attack(world, character, nullptr, position, hit.position, GRUNT_ATTACK_COOLDOWN, deltaTime, "enemy_attack");
-                    }
-                }
-                else if (character->getState() == States::PURSUIT) {
-                    character->setState(States::INVESTIGATION);
-                    speedUp = 1.5;
-                    setAnimation(animator, "run");
-                }
-                else if (character->getState() == States::INVESTIGATION) {
-                    glm::vec3 target = character->getTarget();
-                    target.y = position.y;
-                    if (glm::length(position - target) < 0.9f) {
-                        character->updateTarget();
-                        character->setState(States::PATROL);
-                    }
-                    stoppingDistance = 0.8f;
-                    if (glm::length(position - target) < 3.0f)
-                        setAnimation(animator, "walk");
-                }
-                else if (character->getState() == States::PATROL) {
-                    glm::vec3 target = character->getTarget();
-                    target.y = position.y;
-                    if (glm::length(position - target) < 0.9f) {
-                        character->updateTarget();
-                    }
-                    stoppingDistance = 0.8f;
-                    setAnimation(animator, "walk");
-                }
-
-                move(bodyInterface, rb, entity, position, character->getTarget(), stoppingDistance, isBoss, speedUp);
+                processEntity(world, entity, deltaTime, physicsSystem, bodyInterface, isBoss);
             }
         }
 
         static void onCollision(Entity* self, Entity* other) {
-            if (other->layer == "player_attack") {
-                if (other->timeRemaining <= 0) return; // Bullet already used
+            if (other->layer != "player_attack" || other->timeRemaining <= 0) return;
 
-                CharacterComponent* character = self->getComponent<CharacterComponent>();
-                if (!character || !character->getAlive()) return;
+            CharacterComponent* character = self->getComponent<CharacterComponent>();
+            if (!character || !character->getAlive()) return;
 
-                bool isBoss = (self->name == "taskmaster");
-                if (isBoss && !bossActivated) return;
+            bool isBoss = (self->name == "taskmaster");
+            if (isBoss && !bossActivated) return;
 
-                int damage = isBoss ? -5 : -10;
-                character->setHealth(damage);
-                other->timeRemaining = 0; // Destroy bullet
+            int damage = isBoss ? -BOSS_DAMAGE_TAKEN : -GRUNT_DAMAGE_TAKEN;
+            character->setHealth(damage);
+            other->timeRemaining = 0; // Destroy bullet
 
-                std::cout << self->name << " Health: " << character->getHealth() << std::endl;
+            std::cout << self->name << " Health: " << character->getHealth() << std::endl;
 
-                // Death Logic
-                if (character->getHealth() <= 0) {
-                    character->setAlive(false);
-                    if (!isBoss) {
-                        self->timeRemaining = -1; // Grunts disappear instantly
-                    } else {
-                        // Boss stays for animation
-                        std::cout << "Boss Defeated!" << std::endl;
-                    }
+            if (character->getHealth() <= 0) {
+                character->setAlive(false);
+                if (!isBoss) {
+                    self->timeRemaining = -1; // Grunts disappear instantly
+                } else {
+                    std::cout << "Boss Defeated!" << std::endl;
                 }
             }
         }
 
         static void onTrigger(Entity* self, Entity* other) {
-            if(other->layer == "player_attack")
-            {
-                // Only process damage from active projectiles that haven't been "used"
-                if (other->timeRemaining <= 0) return;
-                
-                CharacterComponent* character = self->getComponent<CharacterComponent>();
-                
-                if (!character->getAlive()) return;
+            if (other->layer != "player_attack" || other->timeRemaining <= 0) return;
+            
+            CharacterComponent* character = self->getComponent<CharacterComponent>();
+            if (!character || !character->getAlive()) return;
 
-                glm::vec3 new_Direction = glm::normalize(glm::vec3(other->getLocalToWorldMatrix()[3]) - glm::vec3(self->getLocalToWorldMatrix()[3]));
+            // Turn to face the attacker
+            glm::vec3 selfPos = glm::vec3(self->getLocalToWorldMatrix()[3]);
+            glm::vec3 otherPos = glm::vec3(other->getLocalToWorldMatrix()[3]);
+            glm::vec3 dirToAttacker = glm::normalize(otherPos - selfPos);
 
-                glm::vec3& rotation = self->localTransform.rotation;
+            if (glm::length(dirToAttacker) > 0.001f) {
+                float targetAngle = glm::atan(dirToAttacker.x, dirToAttacker.z);
+                self->localTransform.rotation.y = targetAngle;
+            }
 
-                if(glm::length(new_Direction) > 0) 
-                {
-                    new_Direction = glm::normalize(new_Direction);
-                    float targetAngle = glm::atan(new_Direction.x, new_Direction.z);
-
-                    rotation.y = targetAngle; 
-                }
-                if(character->getState() != States::PURSUIT) {
-                    character->setState(States::INVESTIGATION);
-                    character->updateTarget(glm::vec3(other->getLocalToWorldMatrix()[3]));
-                }
-
-                //character->block;
+            if (character->getState() != States::PURSUIT) {
+                character->setState(States::INVESTIGATION);
+                character->updateTarget(otherPos);
             }
         }
         
         void exit() {}
 
     private:
-        RaycastHit see(our::PhysicsSystem* physicsSystem, glm::vec3 startPos, glm::vec3 forward, int maxAngle, int numRays) {
+        void loadConfig() {
+            std::string config_path = "config/bullet.jsonc";
+            std::ifstream file_in(config_path);
+            if (!file_in) {
+                std::cerr << "Couldn't open file: " << config_path << std::endl;
+                return;
+            }
+            bullet_config = nlohmann::json::parse(file_in, nullptr, true, true);
+        }
+
+        void processEntity(World* world, Entity* entity, float deltaTime, PhysicsSystem* physicsSystem, JPH::BodyInterface* bodyInterface, bool isBoss) {
+            CharacterComponent* character = entity->getComponent<CharacterComponent>();
+            AnimatorComponent* animator = entity->getComponent<AnimatorComponent>();
+            RigidBodyComponent* rb = entity->getComponent<RigidBodyComponent>();
+
+            if (!character || !rb || rb->runtimeBodyID.IsInvalid()) return;
+
+            if (!character->getAlive()) {
+                if (isBoss) handleBossDeath(entity, animator);
+                return;
+            }
+
+            if (isBoss && !bossActivated) {
+                handleIdle(animator, rb, bodyInterface);
+                return;
+            }
+
+            glm::vec3 position = getEntityPosition(entity);
+            glm::vec3 forward = getForwardDirection(entity);
+
+            RaycastHit hit = scanForPlayer(physicsSystem, position, forward, isBoss);
+            bool playerFound = (hit.hasHit && hit.entity->layer == "player");
+
+            updateAIState(world, entity, character, animator, playerFound, hit.position, position, deltaTime, isBoss);
+            
+            handleMovement(bodyInterface, rb, entity, position, character->getTarget(), character->getState(), isBoss);
+        }
+
+        void handleIdle(AnimatorComponent* animator, RigidBodyComponent* rb, JPH::BodyInterface* bodyInterface) {
+            setAnimation(animator, "idle");
+            JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
+            bodyInterface->SetLinearVelocity(rb->runtimeBodyID, JPH::Vec3(0, currentVel.GetY(), 0));
+        }
+
+        void handleBossDeath(Entity* entity, AnimatorComponent* animator) {
+            if (animator) setAnimation(animator, "death");
+        }
+
+        glm::vec3 getEntityPosition(Entity* entity) {
+            glm::mat4 worldTransform = entity->getLocalToWorldMatrix();
+            glm::vec3 pos = glm::vec3(worldTransform[3]);
+            pos.y += 1.5f;
+            return pos;
+        }
+
+        glm::vec3 getForwardDirection(Entity* entity) {
+            glm::mat4 worldTransform = entity->getLocalToWorldMatrix();
+            return glm::normalize(glm::vec3(worldTransform * glm::vec4(0, 0, 1, 0)));
+        }
+
+        RaycastHit scanForPlayer(PhysicsSystem* physicsSystem, const glm::vec3& startPos, const glm::vec3& forward, bool isBoss) {
+            int maxAngle = isBoss ? BOSS_FOV : GRUNT_FOV;
+            int numRays = isBoss ? BOSS_RAYS : GRUNT_RAYS;
+            float range = isBoss ? BOSS_DETECTION_RANGE : GRUNT_DETECTION_RANGE;
+
             LayerFilter filter({Layers::ENEMY, Layers::ENEMY_ATTACK, Layers::PLAYER_ATTACK, Layers::ENEMY_AWARENESS});
             RaycastHit hit;
             hit.hasHit = false;
 
-            for (float angle_deg = -maxAngle; angle_deg <= maxAngle; angle_deg+=(maxAngle * 2 / numRays)){
+            float step = (float)(maxAngle * 2) / numRays;
+            for (float angle_deg = -maxAngle; angle_deg <= maxAngle; angle_deg += step) {
                 float angle = glm::radians(angle_deg);
                 glm::vec3 dir = glm::rotate(forward, angle, glm::vec3(0, 1, 0));
-                
-                float range = (maxAngle > 60) ? 250.0f : 200.0f; 
                 
                 hit = physicsSystem->Raycast(startPos, dir, range, filter);
                 if (hit.hasHit && hit.entity->layer == "player") return hit;
             }
-            return hit; 
+            return hit;
         }
 
-        void move(JPH::BodyInterface* bodyInterface, RigidBodyComponent* rb, Entity* entity, glm::vec3 pos, glm::vec3 target, float stopping_distance, bool isBoss, float speedUp) {
+        void updateAIState(World* world, Entity* entity, CharacterComponent* character, AnimatorComponent* animator, bool playerFound, const glm::vec3& targetPos, const glm::vec3& currentPos, float deltaTime, bool isBoss) {
+            if (playerFound) {
+                character->setState(States::PURSUIT);
+                character->updateTarget(targetPos);
+                handleCombat(world, character, animator, currentPos, targetPos, deltaTime, isBoss);
+            }
+            else if (character->getState() == States::PURSUIT) {
+                character->setState(States::INVESTIGATION);
+                if (isBoss) setAnimation(animator, "run");
+            }
+            else if (character->getState() == States::INVESTIGATION) {
+                handleInvestigation(character, animator, currentPos);
+            }
+            else if (character->getState() == States::PATROL) {
+                handlePatrol(character, animator, currentPos);
+            }
+        }
+
+        void handleCombat(World* world, CharacterComponent* character, AnimatorComponent* animator, const glm::vec3& currentPos, const glm::vec3& targetPos, float deltaTime, bool isBoss) {
+            float dist = glm::length(currentPos - targetPos);
+            float cooldown = isBoss ? BOSS_ATTACK_COOLDOWN : GRUNT_ATTACK_COOLDOWN;
+
+            if (isBoss) {
+                if (dist < 3.0f) {
+                    attack(world, character, animator, currentPos, targetPos, cooldown, deltaTime, "enemy_attack");
+                } 
+                else if (dist < 8.0f) {
+                    setAnimation(animator, "walk");
+                    attack(world, character, animator, currentPos, targetPos, cooldown, deltaTime, "enemy_attack");
+                } 
+                else {
+                    setAnimation(animator, "run");
+                }
+            } else {
+                // Grunt logic
+                attack(world, character, nullptr, currentPos, targetPos, cooldown, deltaTime, "enemy_attack");
+            }
+        }
+
+        void handleInvestigation(CharacterComponent* character, AnimatorComponent* animator, const glm::vec3& currentPos) {
+            glm::vec3 target = character->getTarget();
+            target.y = currentPos.y;
+            
+            if (glm::length(currentPos - target) < 0.9f) {
+                character->updateTarget();
+                character->setState(States::PATROL);
+            }
+            
+            if (glm::length(currentPos - target) < 3.0f) {
+                setAnimation(animator, "walk");
+            }
+        }
+
+        void handlePatrol(CharacterComponent* character, AnimatorComponent* animator, const glm::vec3& currentPos) {
+            glm::vec3 target = character->getTarget();
+            target.y = currentPos.y;
+            
+            if (glm::length(currentPos - target) < 0.9f) {
+                character->updateTarget();
+            }
+            setAnimation(animator, "walk");
+        }
+
+        void handleMovement(JPH::BodyInterface* bodyInterface, RigidBodyComponent* rb, Entity* entity, const glm::vec3& pos, const glm::vec3& target, States state, bool isBoss) {
+            float stoppingDistance = 0.8f;
+            float speedMultiplier = 1.0f;
+
+            if (state == States::PURSUIT) {
+                if (isBoss) {
+                    float dist = glm::length(pos - target);
+                    if (dist < 3.0f || (dist < 8.0f && dist >= 3.0f)) stoppingDistance = 2.5f;
+                    if (dist >= 8.0f) speedMultiplier = 1.5f;
+                } else {
+                    stoppingDistance = 5.0f;
+                }
+            } else if (state == States::INVESTIGATION && !isBoss) {
+                 // Grunt investigation speed up? Original code had speedUp = 1.5 for investigation
+                 // But only if it was coming from PURSUIT. 
+                 // Let's keep it simple for now or match original logic if needed.
+                 // Original logic: if (character->getState() == States::PURSUIT) { ... speedUp = 1.5; ... }
+                 // Wait, the original logic set speedUp = 1.5 when transitioning FROM pursuit TO investigation.
+                 // And then in the next frame, if state is INVESTIGATION, it didn't explicitly set speedUp, so it would be 1.0.
+                 // Actually, the original code defined `float speedUp = 1;` at the start of the loop.
+                 // So it only sped up during the transition frame? That seems like a bug or negligible.
+                 // However, for Boss, `speedUp = 1.5` was set in the `else` block of `dist < 8.0f`.
+            }
+
+            // Re-evaluating speed multiplier based on original logic more carefully
+            if (isBoss && state == States::PURSUIT) {
+                 float dist = glm::length(pos - target);
+                 if (dist >= 8.0f) speedMultiplier = 1.5f;
+            }
+            
+            // Move logic
             float distance = glm::length(glm::abs(target - pos));
-
+            glm::vec3 moveDir = glm::normalize(target - pos);
+            
             JPH::Vec3 currentVel = bodyInterface->GetLinearVelocity(rb->runtimeBodyID);
-            glm::vec3 new_Direction = glm::normalize(glm::vec3(target - pos));
 
-            if(distance > stopping_distance) {
-                float speed = 2.0f * speedUp;
-        
-                JPH::Vec3 newVel(
-                    new_Direction.x * speed, 
-                    currentVel.GetY(), // gravity
-                    new_Direction.z * speed
-                );
-
+            if (distance > stoppingDistance) {
+                float speed = BASE_MOVE_SPEED * speedMultiplier;
+                JPH::Vec3 newVel(moveDir.x * speed, currentVel.GetY(), moveDir.z * speed);
                 bodyInterface->SetLinearVelocity(rb->runtimeBodyID, newVel);
+            } else {
+                // Stop horizontal movement if reached target
+                 bodyInterface->SetLinearVelocity(rb->runtimeBodyID, JPH::Vec3(0, currentVel.GetY(), 0));
             }
 
-
-            glm::vec3& rotation = entity->localTransform.rotation;
-
-            if(glm::length(new_Direction) > 0) 
-            {
-                new_Direction = glm::normalize(new_Direction);
-                float targetAngle = glm::atan(new_Direction.x, new_Direction.z);
-
-                rotation.y = targetAngle; 
+            // Rotation
+            if (glm::length(moveDir) > 0.001f) {
+                float targetAngle = glm::atan(moveDir.x, moveDir.z);
+                entity->localTransform.rotation.y = targetAngle;
             }
         }
 
-        // Helper: Attack Logic
-        void attack(World* world, CharacterComponent* character, AnimatorComponent* animator, glm::vec3 start, glm::vec3 target, float cooldown, float dt, std::string projectileName) {
+        void attack(World* world, CharacterComponent* character, AnimatorComponent* animator, const glm::vec3& start, const glm::vec3& target, float cooldown, float dt, const std::string& projectileName) {
             float timer = character->getTimer();
             timer -= dt;
 
             if (timer <= 0) {
                 glm::vec3 dir = glm::normalize(target - start);
                 JPH::Vec3 impulse(dir.x, 0, dir.z);
-                impulse = impulse * 100.0f; // Projectile Speed
+                impulse = impulse * PROJECTILE_SPEED;
 
-                ObjectSpawner::spawnObject(world, nullptr, bullet, start, glm::vec3(0), glm::vec3(0.1f), impulse, 10.0f, projectileName);
+                ObjectSpawner::spawnObject(world, nullptr, bullet_config, start, glm::vec3(0), glm::vec3(0.1f), impulse, 10.0f, projectileName);
                 
                 character->setTimer(cooldown, true);
-                if(animator) setAnimation(animator, "attack");
+                if (animator) setAnimation(animator, "attack");
                 
                 std::cout << (animator ? "Boss Attack!" : "Enemy Shoot!") << std::endl;
             } else {
@@ -275,11 +351,6 @@ namespace our
                     animator->play();
                 }
             }
-        }
-
-        void handleBossDeath(Entity* entity) {
-             auto animator = entity->getComponent<AnimatorComponent>();
-             if (animator) setAnimation(animator, "death");
         }
     };
 }
