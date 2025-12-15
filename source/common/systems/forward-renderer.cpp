@@ -94,6 +94,8 @@ namespace our {
             // The default options are fine but we don't need to interact with the depth buffer
             // so it is more performant to disable the depth mask
             postprocessMaterial->pipelineState.depthMask = false;
+
+            currentPostprocessMaterial = nullptr;
         }
     }
 
@@ -180,7 +182,7 @@ namespace our {
         glDepthMask(GL_TRUE);
 
         // If there is a postprocess material, bind the framebuffer
-        if(postprocessMaterial){
+        if(currentPostprocessMaterial){
             //TODO: (Req 11) bind the framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, postprocessFrameBuffer);
         }
@@ -340,11 +342,11 @@ namespace our {
         }
 
         // If there is a postprocess material, apply postprocessing
-        if(postprocessMaterial){
+        if(currentPostprocessMaterial != nullptr){
             //TODO: (Req 11) Return to the default framebuffer
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             //TODO: (Req 11) Setup the postprocess material and draw the fullscreen triangle
-            postprocessMaterial->setup();
+            currentPostprocessMaterial->setup();
             glBindVertexArray(postProcessVertexArray);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);

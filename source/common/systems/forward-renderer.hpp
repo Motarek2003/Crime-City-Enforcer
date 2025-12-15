@@ -44,6 +44,7 @@ namespace our
         GLuint postprocessFrameBuffer, postProcessVertexArray;
         Texture2D *colorTarget, *depthTarget;
         TexturedMaterial* postprocessMaterial;
+        TexturedMaterial* currentPostprocessMaterial;
     public:
         // Initialize the renderer including the sky and the Postprocessing objects.
         // windowSize is the width & height of the window (in pixels).
@@ -53,6 +54,12 @@ namespace our
         // This function should be called every frame to draw the given world
         void render(World* world, PhysicsSystem* physicsSystem = nullptr);
 
+        void togglePostProcessing() {
+            if(currentPostprocessMaterial)
+                currentPostprocessMaterial = nullptr;
+            else
+                currentPostprocessMaterial = postprocessMaterial;
+        }
 
     };
 

@@ -110,8 +110,11 @@ namespace our
                 }
                 else if (character->getState() == States::PURSUIT) {
                     character->setState(States::INVESTIGATION);
-                    speedUp = 1.5;
-                    setAnimation(animator, "run");
+                    if(isBoss)
+                    {
+                        speedUp = 1.5;
+                        setAnimation(animator, "run");
+                    }
                 }
                 else if (character->getState() == States::INVESTIGATION) {
                     glm::vec3 target = character->getTarget();
@@ -247,7 +250,6 @@ namespace our
             }
         }
 
-        // Helper: Attack Logic
         void attack(World* world, CharacterComponent* character, AnimatorComponent* animator, glm::vec3 start, glm::vec3 target, float cooldown, float dt, std::string projectileName) {
             float timer = character->getTimer();
             timer -= dt;
