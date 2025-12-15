@@ -26,8 +26,11 @@ namespace our
         // Global Boss State
         static inline bool bossActivated = false;
         static inline bool bossBlocking = false;  // For collision check
+        static inline bool bossCharging = false;  // For charge attack collision
+        static inline float chargeDamageCooldown = 0.0f;  // Prevent multiple hits per charge
 
         const float BOSS_ATTACK_COOLDOWN = 2.0f;
+        const int CHARGE_DAMAGE = 25;  // Damage dealt by charge attack
         const float GRUNT_ATTACK_COOLDOWN = 3.0f;
         
         // === BOSS ENHANCEMENT: Phase System ===
@@ -72,6 +75,8 @@ namespace our
             
             bossActivated = false;
             bossBlocking = false;
+            bossCharging = false;
+            chargeDamageCooldown = 0.0f;
             resetBossState();
         }
         
@@ -258,6 +263,22 @@ namespace our
         }
 
         static void onCollision(Entity* self, Entity* other) {
+            // === BOSS CHARGE ATTACK: Damage player on collision ===
+            if (self->name == "taskmaster" && other->layer == "player" && bossCharging && chargeDamageCooldown <= 0.0f) {
+                CharacterComponent* playerChar = other->getComponent<CharacterComponent>();
+                if (playerChar && playerChar->getAlive()) {
+                    playerChar->setHealth(-25);  // Charge attack damage
+                    chargeDamageCooldown = 1.0f;  // Prevent multiple hits
+                    std::cout << ">>> BOSS CHARGE HIT PLAYER! -25 HP <<<" << std::endl;
+                    std::cout << "Player Health: " << playerChar->getHealth() << std::endl;
+                    
+                    if (playerChar->getHealth() <= 0) {
+                        playerChar->setAlive(false);
+                    }
+                }
+                return;
+            }
+            
             if (other->layer == "player_attack") {
                 if (other->timeRemaining <= 0) return; // Bullet already used
 
@@ -340,7 +361,7 @@ namespace our
                 float angle = glm::radians(angle_deg);
                 glm::vec3 dir = glm::rotate(forward, angle, glm::vec3(0, 1, 0));
                 
-                float range = (maxAngle > 60) ? 80.0f : 40.0f; 
+                float range = (maxAngle > 60) ? 80.0f : 100.0f; 
                 
                 hit = physicsSystem->Raycast(startPos, dir, range, filter);
                 if (hit.hasHit && hit.entity->layer == "player") return hit;
@@ -462,6 +483,11 @@ namespace our
             strafeTimer += deltaTime;
             chargeTimer += deltaTime;
             
+            // Update charge damage cooldown
+            if (chargeDamageCooldown > 0.0f) {
+                chargeDamageCooldown -= deltaTime;
+            }
+            
             // Update state timers
             if (isBlocking) {
                 blockStateTimer += deltaTime;
@@ -575,6 +601,7 @@ namespace our
                     // Start the actual charge
                     chargeWindingUp = false;
                     isCharging = true;
+                    bossCharging = true;  // Enable charge collision damage
                     chargeStateTimer = 0.0f;
                     std::cout << ">>> BOSS CHARGES!!! <<<" << std::endl;
                 }
@@ -592,6 +619,7 @@ namespace our
                 if (chargeStateTimer >= chargeDuration) {
                     // Charge ended
                     isCharging = false;
+                    bossCharging = false;  // Disable charge collision damage
                     chargeStateTimer = 0.0f;
                     chargeTimer = 0.0f;  // Reset cooldown
                     std::cout << "Boss charge attack ended" << std::endl;

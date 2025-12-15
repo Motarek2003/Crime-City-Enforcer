@@ -12,7 +12,7 @@
   "scene": {
     "renderer": {
       "sky": "assets/textures/sky.jpg",
-      "postprocess": "assets/shaders/postprocess/night-vision.frag"
+      "postprocess": "assets/shaders/postprocess/vignette.frag"
     },
     "assets": {
       "shaders": {
@@ -1014,26 +1014,26 @@
                 "scale": [1, 1, 1]
               }
             ]
-          },
-          {
-            "layer": "enemy_awareness",
-            "position": [0, 100, 0],
-            "rotation": [0, 0, 0],
-            "scale": [1, 1, 1],
-            "components": [
-              {
-                "type": "Collider",
-                "shape": "Sphere",
-                "size": [100, 100, 100],
-                "isTrigger": true
-              },
-              {
-                "type": "Rigid Body",
-                "bodyType": "Kinematic",
-                "useGravity": false
-              }
-            ]
           }
+          // {
+          //   "layer": "enemy_awareness",
+          //   "position": [0, 100, 0],
+          //   "rotation": [0, 0, 0],
+          //   "scale": [1, 1, 1],
+          //   "components": [
+          //     {
+          //       "type": "Collider",
+          //       "shape": "Sphere",
+          //       "size": [100, 100, 100],
+          //       "isTrigger": true
+          //     },
+          //     {
+          //       "type": "Rigid Body",
+          //       "bodyType": "Kinematic",
+          //       "useGravity": false
+          //     }
+          //   ]
+          // }
         ]
       },
 
