@@ -300,6 +300,11 @@ class Playstate: public our::State {
             // If the escape  key is pressed in this frame, go to the play state
             getApp()->changeState("menu");
         }
+
+        if(keyboard.justPressed(GLFW_KEY_F4))
+        {
+            renderer.togglePostProcessing();
+        }
     }
 
     void onDestroy() override {

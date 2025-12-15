@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ecs/world.hpp"
+#include "../components/rigidbody.hpp"
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/BodyInterface.h>

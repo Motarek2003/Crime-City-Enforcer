@@ -28,7 +28,7 @@ namespace our {
         // This ID allows us to talk to the physics engine about this specific body.
         JPH::BodyID runtimeBodyID;
 
-         JPH::Vec3 impulseVector =  JPH::Vec3::sZero();
+        JPH::Vec3 impulseVector =  JPH::Vec3::sZero();
 
         void deserialize(const nlohmann::json& data) override;
     };

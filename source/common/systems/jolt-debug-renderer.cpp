@@ -89,7 +89,6 @@ namespace our {
 
     void JoltDebugRenderer::DrawText3D(JPH::RVec3Arg inPosition, const std::string_view &inString, 
                                        JPH::ColorArg inColor, float inHeight) {
-        // Leave empty
     }
 
 } 
