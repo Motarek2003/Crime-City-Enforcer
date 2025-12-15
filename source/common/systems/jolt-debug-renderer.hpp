@@ -44,7 +44,7 @@ namespace our {
         // 1. Lines
         virtual void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
 
-        // 2. Text empty
+        // 2. Text (empty but had to be overridden)
         virtual void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view &inString, 
                                JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override;
 

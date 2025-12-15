@@ -335,7 +335,7 @@ namespace our {
                 settings.mDrawShape = true;
                 settings.mDrawShapeWireframe = true; // Use DrawLine
 
-                //physicsSystem->getPhysicsSystem()->DrawBodies(settings, debugRenderer);
+                physicsSystem->getPhysicsSystem()->DrawBodies(settings, debugRenderer);
                 
                 debugRenderer->Render();
             }

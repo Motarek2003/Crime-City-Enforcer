@@ -93,30 +93,6 @@ namespace our {
 #endif
     };
 
-    // CONTACT LISTENER (For collision/trigger detection)
-    class PhysicsSystem::ContactListenerImpl : public JPH::ContactListener {
-    public:
-        virtual JPH::ValidateResult OnContactValidate(const JPH::Body &inBody1, const JPH::Body &inBody2, 
-            JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult &inCollisionResult) override {
-            // Allow all contacts
-            return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
-        }
-
-        virtual void OnContactAdded(const JPH::Body &inBody1, const JPH::Body &inBody2, 
-            const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override {
-            std::cout << "Collision: Body " << inBody1.GetID().GetIndex() << " hit Body " << inBody2.GetID().GetIndex() << std::endl;
-        }
-
-        virtual void OnContactPersisted(const JPH::Body &inBody1, const JPH::Body &inBody2, 
-            const JPH::ContactManifold &inManifold, JPH::ContactSettings &ioSettings) override {
-            // Contact is continuing
-        }
-
-        virtual void OnContactRemoved(const JPH::SubShapeIDPair &inSubShapePair) override {
-            // Contact ended
-        }
-    };
-
     // Helper function to create mesh shape from file using Assimp
     JPH::Ref<JPH::ShapeSettings> PhysicsSystem::createMeshShape(const std::string& meshPath, const JPH::Vec3& scale, const glm::quat& rotation) {
         Assimp::Importer importer;
@@ -196,7 +172,6 @@ namespace our {
     
 
     PhysicsSystem::PhysicsSystem() {
-        // Register ourselves as the active system
         instance = this;
     }
 
@@ -205,44 +180,37 @@ namespace our {
         cleanup();
     }
 
-    // MAIN SYSTEM IMPLEMENTATION
     void PhysicsSystem::initialize() {
         // Reset warmup frames for fresh start
         warmupFrames = 0;
         
-        // 1. Initialize Jolt Factory (only if not already initialized)
+        // Initialize Jolt Factory
         JPH::RegisterDefaultAllocator();
         if (JPH::Factory::sInstance == nullptr) {
             JPH::Factory::sInstance = new JPH::Factory();
         }
         JPH::RegisterTypes();
 
-        // 2. Allocators
         tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024); // 10 MB
         jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1);
 
-        // 3. Create Layer Interfaces
         bpLayerInterface = new BPLayerInterfaceImpl();
         objectVsBroadPhaseLayerFilter = new ObjectVsBroadPhaseLayerFilterImpl();
         objectLayerPairFilter = new ObjectLayerPairFilterImpl();
 
-        // 4. Create System
         physicsSystem = new JPH::PhysicsSystem();
         physicsSystem->Init(1024, 0, 1024, 1024, *bpLayerInterface, *objectVsBroadPhaseLayerFilter, *objectLayerPairFilter);
         
         bodyInterface = &physicsSystem->GetBodyInterface();
 
-        // 5. Set Contact Listener
         contactListener = new GameContactListener();
         physicsSystem->SetContactListener(contactListener);
 
-        // 6. Initialize Debug Renderer
         debugRenderer = new JoltDebugRenderer();
         debugRenderer->Initialize();
     }
 
     void PhysicsSystem::cleanup() {
-        // Clean up Jolt objects
         if (debugRenderer) {
             debugRenderer->Cleanup();
             delete debugRenderer;
@@ -278,33 +246,26 @@ namespace our {
 
             auto collider = entity->getComponent<ColliderComponent>();
 
-            // Check if body already exists
             if (!collider->runtimeBodyID.IsInvalid()) continue;
 
-            // Determine if this is static or dynamic
             RigidBodyComponent* rb = entity->getComponent<RigidBodyComponent>();
             
-            // --- GET WORLD TRANSFORM ---
-            // Use world transform to properly inherit parent's position, rotation, and scale
             glm::mat4 worldMatrix = entity->getLocalToWorldMatrix();
             
-            // Extract world position
             glm::vec3 worldPosition = glm::vec3(worldMatrix[3]);
             
-            // Extract world scale
             glm::vec3 worldScale;
             worldScale.x = glm::length(glm::vec3(worldMatrix[0]));
             worldScale.y = glm::length(glm::vec3(worldMatrix[1]));
             worldScale.z = glm::length(glm::vec3(worldMatrix[2]));
             
-            // Extract world rotation matrix (remove scale)
             glm::mat3 rotationMatrix;
             rotationMatrix[0] = glm::vec3(worldMatrix[0]) / worldScale.x;
             rotationMatrix[1] = glm::vec3(worldMatrix[1]) / worldScale.y;
             rotationMatrix[2] = glm::vec3(worldMatrix[2]) / worldScale.z;
             glm::quat worldRotation = glm::quat_cast(rotationMatrix);
 
-            // --- SHAPE CREATION ---
+            // SHAPE CREATION
             JPH::Ref<JPH::ShapeSettings> shapeSettings;
             JPH::Vec3 scale = JPH::Vec3(worldScale.x, worldScale.y, worldScale.z);
             JPH::Vec3 offset = JPH::Vec3(collider->offset.x, collider->offset.y, collider->offset.z) * scale;
@@ -353,8 +314,7 @@ namespace our {
 
             JPH::ShapeRefC shape = result.Get();
 
-            // --- BODY CREATION ---
-            // Use world position and rotation (already extracted above)
+            // BODY CREATION
             JPH::Vec3 pos = JPH::Vec3(worldPosition.x, worldPosition.y, worldPosition.z);
             
             // For mesh colliders, rotation is already baked into the vertices, so use identity rotation
@@ -383,7 +343,7 @@ namespace our {
                 motionType = JPH::EMotionType::Static;
             }
             
-
+            // DETERMINE LAYER
             JPH::ObjectLayer layer;
 
             if(entity->layer == "player")
@@ -401,9 +361,8 @@ namespace our {
 
             JPH::BodyCreationSettings bodySettings(shape, pos, rot, motionType, layer);
             
-            // Apply RigidBody properties if component exists
             if (rb) {
-                // 1. APPLY GRAVITY
+                // APPLY GRAVITY (for spawned entities)
                 if(isWarmingUp)
                     rb->useGravity = false;
                 else
@@ -428,7 +387,6 @@ namespace our {
             if(entity->name == "bullet")
                 bodySettings.mLinearVelocity = rb->impulseVector;
 
-            // Create and Add
             JPH::BodyID bodyID = bodyInterface->CreateAndAddBody(bodySettings, JPH::EActivation::Activate);
             
             // Store the ID in both components
@@ -463,7 +421,7 @@ namespace our {
                     }
             }
 
-            // Only sync Dynamic bodies (Static/Kinematic are controlled by transform)
+            // Only sync Dynamic and Kinematic
             if (bodyInterface->GetMotionType(rb->runtimeBodyID) == JPH::EMotionType::Dynamic) {
                 JPH::RVec3 pos = bodyInterface->GetPosition(rb->runtimeBodyID);
 
@@ -474,7 +432,6 @@ namespace our {
                 glm::mat4 worldMatrix = entity->getLocalToWorldMatrix();
                 
                 glm::vec3 worldPos = glm::vec3(worldMatrix[3]);
-                
 
                 JPH::RVec3 joltPos(worldPos.x, worldPos.y, worldPos.z);
                 JPH::Quat joltRot =  bodyInterface->GetRotation(rb->runtimeBodyID);
@@ -515,12 +472,11 @@ namespace our {
 
                 debugRenderer->DrawLine(start, hitPos, JPH::Color::sGreen);
 
-                // 5. Lock so it doesn't get deleted while reading
+                // Lock so it doesn't get deleted while reading
                 JPH::BodyLockRead lock(physicsSystem->GetBodyLockInterface(), result.mBodyID);
                 if (lock.Succeeded()) {
                     const JPH::Body& body = lock.GetBody();
                     
-                    // Retrieve Entity Pointer
                     hitResult.entity = reinterpret_cast<Entity*>(body.GetUserData());
                 }
             } else

@@ -35,7 +35,6 @@ namespace our {
         std::vector<JPH::ObjectLayer> layersToIgnore;
 
     public:
-        // Constructor takes a list of layers: { Layers::PLAYER, Layers::SENSOR }
         LayerFilter(const std::vector<JPH::ObjectLayer> layers) {
             layersToIgnore = layers;
         }
@@ -87,8 +86,8 @@ namespace our {
         static constexpr int WARMUP_FRAME_COUNT = 5; // Wait 5 frames before simulating
 
     public:
-        PhysicsSystem();  // Constructor sets instance = this
-        ~PhysicsSystem(); // Destructor sets instance = nullptr
+        PhysicsSystem();
+        ~PhysicsSystem();
 
         void initialize();
         void cleanup();
